@@ -175,7 +175,7 @@ map <silent>,,           <Plug>(one-line-comment)
     let g:navigator.s.w = [":execute 'FuzzyGrepRoot ' . expand('<cword>')", 'search-Word']
     let g:navigator.s.b = [':FuzzyMruRoot','search-buffers']
     let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
-    let g:navigator.s.t = [':FuzzyTagsroot','search-tags']
+    let g:navigator.s.t = [':FuzzyTagsRoot','search-tags']
   " (c)code
   let g:navigator.c = { 'name' : '+code' }
     let g:navigator.c.d = [':ALEGoToDefinition','go-to-definition']
