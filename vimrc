@@ -29,7 +29,8 @@ set novisualbell
 set ignorecase
 set smartcase
 set incsearch
-set hlsearch
+" when enabled, it 'sticks' highliight after an easymotion jump
+"set hlsearch
 set tabstop=2
 set shiftwidth=2
 set softtabstop=2
@@ -62,10 +63,9 @@ augroup FormatFile
 augroup end
 
 
-" nerdcommenter
-
+" NERDCommenter
 	" Create default mappings
-	let g:NERDCreateDefaultMappings = 1
+	let g:NERDCreateDefaultMappings = 0
 
 	" Add spaces after comment delimiters by default
 	let g:NERDSpaceDelims = 1
@@ -75,12 +75,6 @@ augroup end
 
 	" Align line-wise comment delimiters flush left instead of following code indentation
 	let g:NERDDefaultAlign = 'left'
-
-	" Set a language to use its alternate delimiters by default
-	let g:NERDAltDelims_java = 1
-
-	" Add your own custom formats or override the defaults
-	let g:NERDCustomDelimiters = { 'c': { 'left': '/**','right': '*/' } }
 
 	" Allow commenting and inverting empty lines (useful when commenting a region)
 	let g:NERDCommentEmptyLines = 1
@@ -93,6 +87,7 @@ augroup end
 
 
 " AnyJump
+  let g:any_jump_disable_default_keybindings = 1
   " Normal mode: Jump to definition under cursor
   nnoremap <leader>j :AnyJump<CR>
 
@@ -230,8 +225,45 @@ augroup end
 	" Set this. Airline will handle the rest.
 	let g:airline#extensions#ale#enabled = 1
 
-" vim-which-key
-	nnoremap <silent> <leader> :WhichKey '<Space>'<CR>
-	nnoremap <silent> <localleader> :<c-u>WhichKey  ','<CR>``
-	" By default timeoutlen is 1000 ms
-   set timeoutlen=500
+" fuzzy
+  let g:fuzzyy_enable_mappings = 0
+  let g:fuzzyy_dropdown = 0
+  let g:fuzzyy_respect_gitignore = 1
+  let g:fuzzyy_include_hidden = 0
+  let g:fuzzyy_root_patterns = ['.git', 'package.json', 'pyproject.toml']
+  let g:fuzzyy_exclude_file = ['*.swp', 'tags', '.terraform', '.tags', 'venv', '.venv']
+
+
+" vim-navigator
+  let g:navigator = {'prefix':'<tab><tab>'}
+  nnoremap <silent><tab><tab> :Navigator g:navigator<cr>
+  vnoremap <silent><tab><tab> :NavigatorVisual g:navigator_visual<cr>
+
+  let g:navigator =  {}
+  " (s)earch
+  let g:navigator.s = { 'name' : '+search' }
+    let g:navigator.s.f = [':FuzzyFilesRoot', 'search-file']
+    let g:navigator.s.w = [':FuzzyGrepRoot', 'search-Word']
+    let g:navigator.s.b = [':FuzzyMruRoot','search-buffers']
+    let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
+    let g:navigator.s.t = [':FuzzTagsroot','search-tags']
+  " (c)code
+  let g:navigator.c = { 'name' : '+code' }
+    let g:navigator.c.d = [':ALEGoToDefinition','go-to-definition']
+    let g:navigator.c.r = [':ALEFindReferences','find-references']
+    let g:navigator.c.h = [':ALEHover','hover']
+    let g:navigator.c.s = [":execute 'ALESymbolSearch ' . expand('<cword>')",'symbol-search']
+
+  let g:navigator_visual =  {}
+  " (c)code
+  let g:navigator_visual.c = { 'name' : '+code' }
+    let g:navigator_visual.c.c = [':NERDCommenterToggle','Comment-out/toggle']
+
+
+" easyMotion
+  let g:EasyMotion_landing_highlight = 0
+  nmap <Leader>bm <Plug>(easymotion-in-f2)
+  map  / <Plug>(easymotion-sn)
+  omap / <Plug>(easymotion-tn)
+
+
