@@ -193,9 +193,16 @@ map <silent>,,           <Plug>(one-line-comment)
 
 
 " easyMotion
+  let g:EasyMotion_do_mapping = 0
+  let g:EasyMotion_smartcase = 1
   let g:EasyMotion_landing_highlight = 0
   nmap <Leader>bm <Plug>(easymotion-in-f2)
   map  / <Plug>(easymotion-sn)
   omap / <Plug>(easymotion-tn)
+  " These `n` and `N` mappings are optional, but they are useful for
+  " repeating the last search in the forward or backward direction.
+  nmap n <Plug>(easymotion-next)
+  nmap N <Plug>(easymotion-prev)
+
 
 
