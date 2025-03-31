@@ -252,4 +252,9 @@ map <silent>,,           <Plug>(one-line-comment)
   nmap N <Plug>(easymotion-prev)
 
 
+  " guttentags
+  let g:guttentags_enabled=1
+  let g:guttentags_ctags_executable='ctags'
 
+  " magit
+  let g:magit_git_cmd = 'git'
