@@ -204,27 +204,47 @@ map <silent>,,           <Plug>(one-line-comment)
   vnoremap <silent><tab><tab> :NavigatorVisual g:navigator_visual<cr>
 
   let g:navigator =  {}
+
   " (s)earch
   let g:navigator.s = { 'name' : '+search' }
-    let g:navigator.s.f = [':FuzzyFilesRoot', 'search-file']
-    let g:navigator.s.w = [":execute 'FuzzyGrepRoot ' . expand('<cword>')", 'search-Word']
-    let g:navigator.s.b = [':FuzzyMruRoot','search-buffers']
-    let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
-    let g:navigator.s.t = [':FuzzyTagsRoot','search-tags']
+    "let g:navigator.s.f = [':FuzzyFilesRoot', 'search-file']
+    let g:navigator.s.f = [':Files', 'search-file']
+
+    "let g:navigator.s.w = [":execute 'FuzzyGrepRoot ' . expand('<cword>')", 'search-current-word']
+    let g:navigator.s.w = [":execute 'Rg ' . expand('<cword>')", 'search-current-word']
+    let g:navigator.s.W = [":Rg", 'search-any-Word']
+
+    "let g:navigator.s.b = [':FuzzyMruRoot','search-buffers']
+    let g:navigator.s.b = [':Buffers','search-buffers']
+
+    "let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
+    let g:navigator.s.c = [':Commands', 'search-commands']
+    let g:navigator.s.m = [':Marks','search-Marks']
+    let g:navigator.s.c = [':Changes','search-Changes']
+    let g:navigator.s.j = [':Jumps','search-Jumps']
+    let g:navigator.s.h = [':History','search-history']
+    let g:navigator.s.s = [':Snippers','search-Snippets']
+    let g:navigator.s.t = [":execute 'Rg ' . ':o:'", 'search-tasks-todo']
+    let g:navigator.s.T = [":execute 'Rg ' . ':WAIT'", 'search-tasks-waiting']
+
   " (c)code
   let g:navigator.c = { 'name' : '+code' }
     let g:navigator.c.d = [':ALEGoToDefinition','go-to-definition']
-    let g:navigator.c.r = [':ALEFindReferences','find-references']
     let g:navigator.c.h = [':ALEHover','hover']
+    let g:navigator.c.r = [':ALEFindReferences','find-references']
     let g:navigator.c.s = [":execute 'ALESymbolSearch ' . expand('<cword>')",'symbol-search']
     let g:navigator.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
     let g:navigator.c.j = [":AnyJump",'AnyJump-to-definition']
+    let g:navigator.c.t = [":TagbarToggle",'TagBar']
+    "let g:navigator.c.t = [':FuzzyTagsRoot','search-tags']
+    let g:navigator.c.t = [':Tags','search-tags']
+    let g:navigator.c.c = [':BCommits','search-buffer-commits']
 
   let g:navigator_visual =  {}
   " (c)code
   let g:navigator_visual.c = { 'name' : '+code' }
     let g:navigator_visual.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
-    let g:navigator_visual.c.j = [":AnyJump",'AnyJump-to-definition']
+    let g:navigator_visual.c.x = [':BCommits','search-buffer-commits']
 
 
 " easyMotion
