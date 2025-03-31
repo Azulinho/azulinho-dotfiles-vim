@@ -1,8 +1,0 @@
-[some-section]
-name = "not me"
-
-[package]
-name = "vim-test"
-
-[some-other-section]
-name = "not me either"
