@@ -154,6 +154,41 @@ map <silent>,,           <Plug>(one-line-comment)
 	" Set this. Airline will handle the rest.
 	let g:airline#extensions#ale#enabled = 1
 
+  let g:ale_go_go_executable = 'go'
+  let g:ale_go_golangci_lint_executable = 'golangci-lint'
+  let g:ale_go_gopls_executable = 'gopls'
+  let g:ale_go_gofmt_executable = 'gofmt'
+
+  let g:ale_terraform_terraform_executable = 'terraform'
+  let g:ale_terraform_tflint_executable = 'tflint'
+  let g:ale_terraform_tfsec_executable = 'tfsec'
+  let g:ale_terraform_tfdocs_executable = 'terraform-docs'
+  let g:ale_terraform_ls_executable = 'terraform-ls'
+  let g:ale_terraform_ls_options = 'serve'
+  let g:ale_terraform_langserver_executable = 'terraform-lsp'
+
+  let g:ale_linters = {
+        "\ 'terraform': ['terraform_ls', 'terraform_lsp', 'tflint', 'tfsec'],
+        \ 'terraform': ['terraform_lsp', 'tflint', 'tfsec'],
+        \ 'go': ['gopls', 'golangci_lint'],
+        \ 'python': ['mypy', 'pylint', 'pyright', 'black'],
+   \}
+  let g:ale_fixers = {
+        \ 'terraform': ['terraform'],
+        \ 'go': ['gofmt'],
+        \ 'python': ['black'],
+   \} 
+
+  let g:ale_linters_explicit = 1
+  let g:ale_fixers_explicit = 1
+  let g:ale_lint_on_enter = 0
+  let g:ale_lint_on_save = 1
+  let g:ale_lint_on_filetype_changed = 0
+  let g:ale_lint_on_text_changed = 0
+  let g:ale_lint_on_insert_leave = 0
+  let g:ale_lint_on_cursor_hold = 0
+  let g:ale_lint_delay = 0
+
 " fuzzy
   let g:fuzzyy_enable_mappings = 0
   let g:fuzzyy_dropdown = 0
