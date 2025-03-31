@@ -195,7 +195,8 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:fuzzyy_respect_gitignore = 1
   let g:fuzzyy_include_hidden = 0
   let g:fuzzyy_root_patterns = ['.git', 'package.json', 'pyproject.toml']
-  let g:fuzzyy_exclude_file = ['*.swp', 'tags', '.terraform', '.tags', 'venv', '.venv']
+  let g:fuzzyy_exclude_file = ['*.swp', 'tags', '.terraform.*', '.tags', 'venv', '.venv']
+  let g:fuzzyy_exclude_dir = ['node_modules', 'vendor', 'venv', '.venv', '.git', '.terraform']
 
 
 " vim-navigator
