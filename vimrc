@@ -46,8 +46,8 @@ let &t_SI.="\e[5 q"
 let &t_SR.="\e[4 q"
 let &t_EI.="\e[1 q"
 
-set background=dark
-colorscheme gruvbox
+set background=light
+colorscheme PaperColor
 
 " general keymapping
 nnoremap <leader>sp :set paste!<CR>
