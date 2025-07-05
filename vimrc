@@ -47,8 +47,10 @@ let &t_SI.="\e[5 q"
 let &t_SR.="\e[4 q"
 let &t_EI.="\e[1 q"
 
-set background=light
+set background=dark
 colorscheme PaperColor
+
+set path+=$PWD/**
 
 
 function! GitCloneDepth1(repo_url, target_path)
@@ -79,7 +81,7 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/pechorin/any-jump.vim.git', 'any-jump.vim')
   call GitCloneDepth1('https://github.com/romainl/Apprentice.git', 'Apprentice')
   call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
-  call GitCloneDepth1('https://github.com/github/copilot.vim.git', 'copilot.vim')
+  "call GitCloneDepth1('https://github.com/github/copilot.vim.git', 'copilot.vim')
   call GitCloneDepth1('https://github.com/Raimondi/delimitMate.git', 'delimitMate')
   call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
   call GitCloneDepth1('https://github.com/morhetz/gruvbox.git', 'gruvbox')
@@ -108,7 +110,10 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/mhinz/vim-startify.git', 'vim-startify')
   call GitCloneDepth1('https://github.com/vim-test/vim-test.git', 'vim-test')
   call GitCloneDepth1('https://github.com/vimwiki/vimwiki.git', 'vimwiki')
-  call GitCloneDepth1('https://github.com/Donaldttt/fuzzyy.git', 'fuzzy')
+  "call GitCloneDepth1('https://github.com/Donaldttt/fuzzyy.git', 'fuzzy')
+  call GitCloneDepth1('https://github.com/Exafunction/windsurf.vim.git', 'windsurf.vim')
+  call GitCloneDepth1('https://github.com/pasky/claude.vim.git', 'claude.vim')
+  call GitCloneDepth1('https://github.com/puremourning/vimspector.git', 'vimspector')
 endfunction
 
 command! PluginInstall call PluginInstall()
@@ -116,6 +121,9 @@ command! PluginInstall call PluginInstall()
 " general keymapping
 nnoremap <leader>sp :set paste!<CR>
 nnoremap <leader>snp :set nopaste!<CR>
+nnoremap <leader>w :w!<CR>
+
+
 
 " FormatFile
 augroup FormatFile
@@ -125,6 +133,328 @@ augroup FormatFile
   autocmd BufEnter *.py set ai ts=4 sw=4 sts=4 et
   autocmd BufEnter *.md setlocal conceallevel=0
 augroup end
+
+" trim trailing whitespace
+autocmd BufWritePre * :%s/\s\+$//e
+
+
+function! ChangeToGitRoot()
+    " Use git rev-parse to find the top-level git directory
+    let git_root = system('git rev-parse --show-toplevel 2>/dev/null')
+    let git_root = substitute(git_root, '\n', '', 'g')
+    if v:shell_error == 0 && isdirectory(git_root)
+        execute 'cd ' . git_root
+    endif
+endfunction
+
+" Change the current directory to the git root on vim enter
+autocmd VimEnter * call ChangeToGitRoot()
+
+
+" RunToQuickfix
+command! -nargs=1 RunToQuickfix cexpr system(<q-args>) | copen
+
+" GrepCurrentWord
+command! RgCurrentWord cexpr system('cd ' . shellescape(system('git rev-parse --show-toplevel')->trim()) . ' && rg --vimgrep --hidden --no-ignore ' . shellescape(expand('<cword>'))) | copen
+
+" GrepForWord
+command! -nargs=+ RgForWord cexpr system('cd ' . shellescape(system('git rev-parse --show-toplevel')->trim()) . ' && rg -i --vimgrep --hidden --no-ignore ' . shellescape(join([<f-args>], ' . '))) | copen
+
+" RgPromptWord
+command! RgPromptWord call s:rg_prompt_word()
+
+function! s:rg_prompt_word()
+  call inputsave()
+  let search_term = input('Search: ')
+  call inputrestore()
+  if empty(search_term)
+    echo "No search term entered"
+    return
+  endif
+  let repo_root = system('git rev-parse --show-toplevel')
+  let repo_root = substitute(repo_root, '\n', '', 'g')
+  execute 'cexpr system("rg -i --vimgrep --hidden --no-ignore " . shellescape(search_term) . " " . shellescape(repo_root))'
+  copen
+endfunction
+
+function! SearchWithFd(search_pattern)
+    " Find the Git root directory
+    let git_root = system('git rev-parse --show-toplevel')
+
+    " Trim any trailing whitespace or newline
+    let git_root = substitute(git_root, '\n\+$', '', '')
+
+    " Check if Git root was found
+    if v:shell_error == 0 && len(git_root) > 0
+        " Change directory to Git root
+        let old_dir = getcwd()
+        cd `=git_root`
+    else
+        echo "Not a git repository"
+        return
+    endif
+
+    " Execute fd within the Git root
+    let l:cmd = 'fd --type f ' . shellescape(a:search_pattern)
+    let l:results = split(system(l:cmd), "\n")
+    call setqflist(map(filter(copy(l:results), 'len(v:val)'), '{"filename": v:val, "lnum": 1}'))
+
+    " Automatically open the quickfix window if there are entries
+    if len(getqflist()) > 0
+        copen
+    endif
+
+    " Return to the original directory
+    execute 'cd ' . fnameescape(old_dir)
+endfunction
+
+command! -nargs=? Fd if empty(<q-args>) | call SearchWithFd(input('Enter search pattern: ')) | else | call SearchWithFd(<q-args>) | endif
+
+command! ListBuffers call ListMRUBuffers()
+
+function! ListMRUBuffers()
+    let buf_list = []
+    " Loop through buffer list
+    for bufnr in range(1, bufnr('$'))
+        if buflisted(bufnr)
+            " Capture buffer details: number, filename, and last access time
+            let bufname = bufname(bufnr)
+            let lnum = bufwinnr(bufnr) > 0 ? line('.', bufnr) : 1
+            let buf_details = {'bufnr': bufnr, 'filename': bufname, 'lnum': lnum}
+            call add(buf_list, buf_details)
+        endif
+    endfor
+
+    " Sort buffers based on the buffer number in descending order (most recently used at top)
+    call sort(buf_list, {a, b -> b.bufnr - a.bufnr})
+
+    " Set up items for the quickfix list
+    let qf_items = map(buf_list, {idx, val -> {'filename': val.filename, 'lnum': val.lnum, 'text': 'Buffer '.val.bufnr}})
+
+    " Populate the quickfix list
+    call setqflist(qf_items)
+
+    " Open quickfix window
+    copen
+endfunction
+
+command! -nargs=? SearchCommands call SearchVimCommands(<q-args>)
+
+function! SearchVimCommands(search_pattern)
+    " Ask for input if no argument provided
+    let l:pattern = a:search_pattern
+    if len(l:pattern) == 0
+        let l:pattern = input('Enter command search pattern: ')
+    endif
+
+    " Obtain all command names
+    redir => l:commands
+    silent command
+    redir END
+
+    " Split commands into a list and filter based on the search pattern
+    let l:commands_list = split(l:commands, "\n")
+    let l:filtered_commands = filter(copy(l:commands_list), 'v:val =~ l:pattern')
+
+    " Prepare quickfix list
+    let qf_list = []
+    for cmd in l:filtered_commands
+        call add(qf_list, {'filename': '', 'lnum': 0, 'text': cmd})
+    endfor
+
+    " Set quickfix list and open quickfix window
+    call setqflist(qf_list)
+    copen
+endfunction
+
+
+function! RgCurrentWordInBuffer()
+    let word = expand('<cword>')  " Get the word under the cursor.
+    let pattern = shellescape('\<' . word . '\>')  " Add word boundaries and escape the pattern.
+
+    " Build the command to execute
+    let command = 'rg --vimgrep ' . pattern . ' ' . shellescape(expand('%:p'))
+
+    " Execute the rg command and capture the output as a list
+    let results = systemlist(command)
+
+    " Clear the location list and conditionally populate it
+    lclose
+    lexpr []
+    if !empty(results)
+        call setloclist(0, map(copy(results), 'RgResultToLocList(v:val)'))
+        lopen
+    else
+        echo "No occurrences found for the word: " . word
+    endif
+endfunction
+
+function! RgResultToLocList(line)
+    let parts = split(a:line, ':')
+    return {
+        \ "bufnr": bufnr(''),
+        \ "lnum": str2nr(parts[1]),
+        \ "col": str2nr(parts[2]),
+        \ "text": join(parts[3:], ':')
+    \ }
+endfunction
+
+
+
+command! RgCurrentWordInBuffer call RgCurrentWordInBuffer()
+
+
+function! RgSearchInBuffer()
+    " Ask the user for a search pattern
+    let pattern = input('Enter search pattern: ')
+    if pattern == ''
+        echo 'Search canceled.'
+        return
+    endif
+    let escapedPattern = shellescape(pattern)
+
+    " Build the rg command like before
+    let command = 'rg --vimgrep ' . escapedPattern . ' ' . shellescape(expand('%:p'))
+
+    " Execute the rg command and capture the output as a list
+    let results = systemlist(command)
+
+    " Clear the location list and conditionally populate it
+    lclose
+    lexpr []
+    if !empty(results)
+        call setloclist(0, map(copy(results), 'RgResultToLocList(v:val)'))
+        lopen
+    else
+        echo "No occurrences found for the pattern: " . pattern
+    endif
+endfunction
+
+command! RgSearchBuffer call RgSearchInBuffer()
+
+
+
+function! RgSearchChecklist()
+    let pattern = "' \\\[ \\\]'"
+    let git_root = system('git rev-parse --show-toplevel')
+
+    " Trim any newline characters from the output
+    let git_root = substitute(git_root, '\n', '', 'g')
+
+    " If git command fails, git_root will be empty or have an error message
+    if v:shell_error || git_root == ''
+        echo 'Not inside a Git repository.'
+        return
+    endif
+
+    " Compose the ripgrep command for use with Vim's quickfix, ensuring --vimgrep for proper formatting.
+    let command = 'rg --vimgrep ' . pattern . ' ' . git_root
+
+    " Execute the rg command and get the results
+    let results = systemlist(command)
+
+    " Prepare results for Vim's quickfix list
+    let formatted_results = map(results, 'ProcessRgOutput(v:val)')
+
+    cclose
+    if !empty(formatted_results)
+        call setqflist(formatted_results)
+        copen
+    else
+        echo "No occurrences found for the pattern: ' [ ]'"
+    endif
+endfunction
+
+function! ProcessRgOutput(line)
+    let parts = split(a:line, ':', 1)
+    return {'filename': parts[0], 'lnum': str2nr(parts[1]), 'col': str2nr(parts[2]), 'text': join(parts[3:], ':')}
+endfunction
+
+command! RgSearchChecklist call RgSearchChecklist()
+
+
+
+function! RgSearchWaitingChecklist()
+    let pattern = ":WAIT:"
+    let git_root = system('git rev-parse --show-toplevel')
+
+    " Trim any newline characters from the output
+    let git_root = substitute(git_root, '\n', '', 'g')
+
+    " If Git command fails, git_root will be empty or have an error message
+    if v:shell_error || git_root == ''
+        echo 'Not inside a Git repository.'
+        return
+    endif
+
+    " Compose the command to search with rg and exclude any '[X]' patterns
+    " Note: We use 'rg -v "\[X\]"' to filter out lines containing '[X]' after the initial search
+    let command = 'rg --vimgrep ' . pattern . ' ' . git_root . ' | rg -v "\[X\]"'
+
+    " Execute the rg command and get the results
+    let results = systemlist(command)
+
+    " Prepare results for Vim's quickfix list
+    let formatted_results = map(results, 'ProcessRgOutput(v:val)')
+
+    cclose
+    if !empty(formatted_results)
+        call setqflist(formatted_results)
+        copen
+    else
+        echo "No occurrences found for the pattern: ' [ ]' excluding '[X]'"
+    endif
+endfunction
+
+
+command! RgSearchWaitingChecklist call RgSearchWaitingChecklist()
+
+
+
+function! SearchTag()
+    let tag_pattern = input('Enter tag to search for: ')
+
+    " Exit if no input is given
+    if empty(tag_pattern)
+        echo 'Search canceled.'
+        return
+    endif
+
+    let git_root = system('git rev-parse --show-toplevel')
+    let git_root = substitute(git_root, '\n', '', 'g')
+
+    if v:shell_error || git_root == ''
+        echo 'Not inside a Git repository.'
+        return
+    endif
+
+    let tags_file = git_root . '/tags'
+    let command = 'rg --no-heading --vimgrep ' . shellescape(tag_pattern) . ' ' . shellescape(tags_file)
+
+    let results = systemlist(command)
+    let formatted_results = map(results, 'FormatTagResult(v:val)')
+
+    cclose
+    if !empty(formatted_results)
+        call setqflist(formatted_results)
+        copen
+    else
+        echo "No tag found matching: " . tag_pattern
+    endif
+endfunction
+
+function! FormatTagResult(line)
+    let parts = split(a:line, ':', 1)
+    return {
+        \ 'filename': parts[0],
+        \ 'lnum': str2nr(parts[1]),
+        \ 'col': str2nr(parts[2]),
+        \ 'text': join(parts[3:], ':')
+        \ }
+endfunction
+
+command! SearchTag call SearchTag()
+
 
 
 "simple-commenter
@@ -241,7 +571,7 @@ map <silent>,,           <Plug>(one-line-comment)
         \ 'terraform': ['terraform'],
         \ 'go': ['gofmt'],
         \ 'python': ['black'],
-   \} 
+   \}
 
   let g:ale_linters_explicit = 1
   let g:ale_fixers_explicit = 1
@@ -254,13 +584,13 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:ale_lint_delay = 0
 
 " fuzzy
-  let g:fuzzyy_enable_mappings = 0
-  let g:fuzzyy_dropdown = 0
-  let g:fuzzyy_respect_gitignore = 1
-  let g:fuzzyy_include_hidden = 0
-  let g:fuzzyy_root_patterns = ['.git', 'package.json', 'pyproject.toml']
-  let g:fuzzyy_exclude_file = ['*.swp', 'tags', '.terraform.*', '.tags', 'venv', '.venv']
-  let g:fuzzyy_exclude_dir = ['node_modules', 'vendor', 'venv', '.venv', '.git', '.terraform']
+"   let g:fuzzyy_enable_mappings = 0
+"   let g:fuzzyy_dropdown = 0
+"   let g:fuzzyy_respect_gitignore = 1
+"   let g:fuzzyy_include_hidden = 0
+"   let g:fuzzyy_root_patterns = ['.git', 'package.json', 'pyproject.toml']
+"   let g:fuzzyy_exclude_file = ['*.swp', 'tags', '.terraform.*', '.tags', 'venv', '.venv']
+"   let g:fuzzyy_exclude_dir = ['node_modules', 'vendor', 'venv', '.venv', '.git', '.terraform']
 
 " vim-navigator
   let g:navigator = {'prefix':'<tab><tab>'}
@@ -271,16 +601,31 @@ map <silent>,,           <Plug>(one-line-comment)
 
   " (s)earch
   let g:navigator.s = { 'name' : '+search' }
-    let g:navigator.s.f = [':FuzzyFilesRoot', 'search-file']
+    "let g:navigator.s.f = [':FuzzyFilesRoot', 'search-file']
+    let g:navigator.s.f = [':Fd', 'search-file']
 
-    let g:navigator.s.w = [":execute 'FuzzyGrepRoot ' . expand('<cword>')", 'search-current-word']
-    let g:navigator.s.W = ["FuzzyGrepRoot", 'search-any-Word']
+    "let g:navigator.s.w = [":execute 'FuzzyGrepRoot ' . expand('<cword>')", 'search-current-word']
+    let g:navigator.s.w = [":RgCurrentWord ", 'search-current-word']
 
-    let g:navigator.s.b = [':FuzzyMruRoot','search-buffers']
+    "let g:navigator.s.W = ["FuzzyGrepRoot", 'search-any-Word']
+    let g:navigator.s.W = [":RgPromptWord", 'search-any-Word']
 
-    let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
-    let g:navigator.s.t = [":execute 'FuzzyGrepRoot ' . ':o:'", 'search-tasks-todo']
-    let g:navigator.s.T = [":execute 'FuzzyGrepRoot ' . ':WAIT'", 'search-tasks-waiting']
+    "let g:navigator.s.b = [':FuzzyMruRoot','search-buffers']
+    let g:navigator.s.b = [':ListBuffers','search-buffers']
+
+    "let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
+    let g:navigator.s.c = [':SearchCommands', 'search-commands']
+    "let g:navigator.s.t = [":execute 'FuzzyGrepRoot ' . '[ ]'", 'search-tasks-todo']
+    let g:navigator.s.t = [":RgSearchChecklist", 'search-tasks-todo']
+
+    "let g:navigator.s.T = [":execute 'FuzzyGrepRoot ' . ':WAIT'", 'search-tasks-waiting']
+    let g:navigator.s.T = [":RgSearchWaitingChecklist", 'search-tasks-waiting']
+
+  let g:navigator.b = { 'name' : '+Buffer' }
+    "let g:navigator.b.w = [":execute 'FuzzyInBuffer ' . expand('<cword>')", 'search-current-word-in-buffer']
+    let g:navigator.b.w = [":execute 'RgCurrentWordInBuffer'", 'search-current-word-in-buffer']
+    "let g:navigator.b.W = ["FuzzyInBuffer", "search-word-in-buffer"]
+    let g:navigator.b.W = ["RgSearchBuffer", "search-word-in-buffer"]
 
   " (c)code
   let g:navigator.c = { 'name' : '+code' }
@@ -291,12 +636,25 @@ map <silent>,,           <Plug>(one-line-comment)
     let g:navigator.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
     let g:navigator.c.j = [":AnyJump",'AnyJump-to-definition']
     let g:navigator.c.t = [":TagbarToggle",'TagBar']
-    let g:navigator.c.t = [':FuzzyTagsRoot','search-tags']
+    "let g:navigator.c.t = [':FuzzyTagsRoot','search-tags']
+    let g:navigator.c.t = [':SearchTag','search-tags']
+    let g:navigator.c.o =  [':ClaudeChat', 'Claude-Open-Chat']
+  let g:navigator.d = { 'name' : '+Debug' }
+    let g:navigator.d.L = [':call vimspector#Launch()','Vimspector-launch']
+    let g:navigator.d.t = [':call vimspector#ToggleBreakpoint()','Vimspector-Toggle-Breakpoint']
+    let g:navigator.d.c = [':call vimspector#Continue()','Vimspector-Continue']
+		let g:navigator.d.T = [':call vimspector#ClearBreakpoint()','Vimspector-Clear-Breakpoint']
+		let g:navigator.d.i = [':call vimspector#StepInto()','Vimspector-Step-Into']
+		let g:navigator.d.n = [':call vimspector#StepOver()','Vimspector-Step-Over']
+		let g:navigator.d.o = [':call vimspector#StepOut()','Vimspector-Step-Out']
+    let g:navigator.d.r = [':call vimspector#Reset()','Vimspector-Reset']
+		let g:navigator.d.R = [':call vimspector#Restart()','Vimspector-Restart']
 
   let g:navigator_visual =  {}
   " (c)code
   let g:navigator_visual.c = { 'name' : '+code' }
     let g:navigator_visual.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
+    let g:navigator_visual.c.i =  ['<Plug>(ClaudeImplement)', 'Claude-Implement']
 
 
 " easyMotion
@@ -318,3 +676,25 @@ map <silent>,,           <Plug>(one-line-comment)
 
   " magit
   let g:magit_git_cmd = 'git'
+
+
+  " vim-ai
+  let g:vim_ai_debug=1
+  let g:vim_ai_debug_log_file = "/tmp/vim_ai_debug.log"
+
+  " airline
+  let g:airline_inactive_collapse=1
+
+  "claude.vim
+  let g:claude_api_key = $CLAUDE_API_KEY
+
+  let g:claude_map_implement = "<Leader>ci"
+  let g:claude_map_open_chat = "<Leader>cc"
+  let g:claude_map_send_chat_message = "<C-]>"
+  let g:claude_map_cancel_response = "<Leader>cx"
+
+
+  let g:vimwiki_list = [{'path': '~/vimwiki/',
+                        \ 'syntax': 'markdown', 'ext': 'md'}]
+
+  let g:vimwiki_global_ext = 0
