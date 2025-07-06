@@ -155,10 +155,10 @@ autocmd VimEnter * call ChangeToGitRoot()
 command! -nargs=1 RunToQuickfix cexpr system(<q-args>) | copen
 
 " GrepCurrentWord
-command! RgCurrentWord cexpr system('cd ' . shellescape(system('git rev-parse --show-toplevel')->trim()) . ' && rg --vimgrep --hidden --no-ignore ' . shellescape(expand('<cword>'))) | copen
+command! RgCurrentWord cexpr system('rg --vimgrep --no-hidden --no-ignore ' . shellescape(expand('<cword>')) . ' | sort') | copen
 
 " GrepForWord
-command! -nargs=+ RgForWord cexpr system('cd ' . shellescape(system('git rev-parse --show-toplevel')->trim()) . ' && rg -i --vimgrep --hidden --no-ignore ' . shellescape(join([<f-args>], ' . '))) | copen
+command! -nargs=+ RgForWord cexpr system('rg -i --vimgrep --no-hidden --no-ignore ' . shellescape(join([<f-args>], ' . ')) . ' | sort') | copen
 
 " RgPromptWord
 command! RgPromptWord call s:rg_prompt_word()
@@ -171,31 +171,12 @@ function! s:rg_prompt_word()
     echo "No search term entered"
     return
   endif
-  let repo_root = system('git rev-parse --show-toplevel')
-  let repo_root = substitute(repo_root, '\n', '', 'g')
-  execute 'cexpr system("rg -i --vimgrep --hidden --no-ignore " . shellescape(search_term) . " " . shellescape(repo_root))'
+  execute 'cexpr system("rg -i --vimgrep --no-hidden --no-ignore " . shellescape(search_term) . " | sort")'
   copen
 endfunction
 
 function! SearchWithFd(search_pattern)
-    " Find the Git root directory
-    let git_root = system('git rev-parse --show-toplevel')
-
-    " Trim any trailing whitespace or newline
-    let git_root = substitute(git_root, '\n\+$', '', '')
-
-    " Check if Git root was found
-    if v:shell_error == 0 && len(git_root) > 0
-        " Change directory to Git root
-        let old_dir = getcwd()
-        cd `=git_root`
-    else
-        echo "Not a git repository"
-        return
-    endif
-
-    " Execute fd within the Git root
-    let l:cmd = 'fd --type f ' . shellescape(a:search_pattern)
+    let l:cmd = 'fd --type f ' . shellescape(a:search_pattern) . ' |sort'
     let l:results = split(system(l:cmd), "\n")
     call setqflist(map(filter(copy(l:results), 'len(v:val)'), '{"filename": v:val, "lnum": 1}'))
 
@@ -204,8 +185,6 @@ function! SearchWithFd(search_pattern)
         copen
     endif
 
-    " Return to the original directory
-    execute 'cd ' . fnameescape(old_dir)
 endfunction
 
 command! -nargs=? Fd if empty(<q-args>) | call SearchWithFd(input('Enter search pattern: ')) | else | call SearchWithFd(<q-args>) | endif
@@ -336,19 +315,9 @@ command! RgSearchBuffer call RgSearchInBuffer()
 
 function! RgSearchChecklist()
     let pattern = "' \\\[ \\\]'"
-    let git_root = system('git rev-parse --show-toplevel')
-
-    " Trim any newline characters from the output
-    let git_root = substitute(git_root, '\n', '', 'g')
-
-    " If git command fails, git_root will be empty or have an error message
-    if v:shell_error || git_root == ''
-        echo 'Not inside a Git repository.'
-        return
-    endif
 
     " Compose the ripgrep command for use with Vim's quickfix, ensuring --vimgrep for proper formatting.
-    let command = 'rg --vimgrep ' . pattern . ' ' . git_root
+    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki |sort'
 
     " Execute the rg command and get the results
     let results = systemlist(command)
@@ -376,20 +345,10 @@ command! RgSearchChecklist call RgSearchChecklist()
 
 function! RgSearchWaitingChecklist()
     let pattern = ":WAIT:"
-    let git_root = system('git rev-parse --show-toplevel')
-
-    " Trim any newline characters from the output
-    let git_root = substitute(git_root, '\n', '', 'g')
-
-    " If Git command fails, git_root will be empty or have an error message
-    if v:shell_error || git_root == ''
-        echo 'Not inside a Git repository.'
-        return
-    endif
 
     " Compose the command to search with rg and exclude any '[X]' patterns
     " Note: We use 'rg -v "\[X\]"' to filter out lines containing '[X]' after the initial search
-    let command = 'rg --vimgrep ' . pattern . ' ' . git_root . ' | rg -v "\[X\]"'
+    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki | rg -v "\[X\]" | sort'
 
     " Execute the rg command and get the results
     let results = systemlist(command)
@@ -420,16 +379,8 @@ function! SearchTag()
         return
     endif
 
-    let git_root = system('git rev-parse --show-toplevel')
-    let git_root = substitute(git_root, '\n', '', 'g')
-
-    if v:shell_error || git_root == ''
-        echo 'Not inside a Git repository.'
-        return
-    endif
-
-    let tags_file = git_root . '/tags'
-    let command = 'rg --no-heading --vimgrep ' . shellescape(tag_pattern) . ' ' . shellescape(tags_file)
+    let tags_file = './tags'
+    let command = 'rg --no-heading --vimgrep ' . shellescape(tag_pattern) . ' ' . shellescape(tags_file) . ' | sort'
 
     let results = systemlist(command)
     let formatted_results = map(results, 'FormatTagResult(v:val)')
