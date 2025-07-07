@@ -124,6 +124,7 @@ nnoremap <leader>snp :set nopaste!<CR>
 nnoremap <leader>w :w!<CR>
 
 
+let s:rg_command="rg -i --vimgrep --hidden --no-ignore -g '!tags' "
 
 " FormatFile
 augroup FormatFile
@@ -138,14 +139,23 @@ augroup end
 autocmd BufWritePre * :%s/\s\+$//e
 
 
-function! ChangeToGitRoot()
+command! ClearQuickfixList cexpr []
+
+function! FindGitRoot()
     " Use git rev-parse to find the top-level git directory
     let git_root = system('git rev-parse --show-toplevel 2>/dev/null')
     let git_root = substitute(git_root, '\n', '', 'g')
     if v:shell_error == 0 && isdirectory(git_root)
-        execute 'cd ' . git_root
+        return git_root
     endif
+    return "."
 endfunction
+
+
+function! ChangeToGitRoot()
+    execute 'cd ' . FindGitRoot()
+endfunction
+
 
 " Change the current directory to the git root on vim enter
 autocmd VimEnter * call ChangeToGitRoot()
@@ -155,28 +165,34 @@ autocmd VimEnter * call ChangeToGitRoot()
 command! -nargs=1 RunToQuickfix cexpr system(<q-args>) | copen
 
 " GrepCurrentWord
-command! RgCurrentWord cexpr system('rg --vimgrep --no-hidden --no-ignore ' . shellescape(expand('<cword>')) . ' | sort') | copen
+command! RgCurrentWord cexpr system(s:rg_command . shellescape(expand('<cword>')) . ' ' . FindGitRoot() . ' |sort') | copen
 
 " GrepForWord
-command! -nargs=+ RgForWord cexpr system('rg -i --vimgrep --no-hidden --no-ignore ' . shellescape(join([<f-args>], ' . ')) . ' | sort') | copen
+command! -nargs=+ RgForWord cexpr system(s:rg_command . shellescape(join([<f-args>], ' . ')) . ' ' . FindGitRoot() . ' |sort') | copen
 
-" RgPromptWord
-command! RgPromptWord call s:rg_prompt_word()
 
-function! s:rg_prompt_word()
+function! s:search_term()
   call inputsave()
   let search_term = input('Search: ')
   call inputrestore()
   if empty(search_term)
     echo "No search term entered"
-    return
+    return ""
   endif
-  execute 'cexpr system("rg -i --vimgrep --no-hidden --no-ignore " . shellescape(search_term) . " | sort")'
+  return search_term
+endfunction
+
+function! s:rg_prompt_word()
+  execute 'cexpr system(s:rg_command . s:search_term() . " " . FindGitRoot() . " |sort")'
   copen
 endfunction
 
+" RgPromptWord
+command! RgPromptWord call s:rg_prompt_word()
+
+
 function! SearchWithFd(search_pattern)
-    let l:cmd = 'fd --type f ' . shellescape(a:search_pattern) . ' |sort'
+    let l:cmd = 'cd ' . FindGitRoot() . ' && fd --type f ' . shellescape(a:search_pattern)
     let l:results = split(system(l:cmd), "\n")
     call setqflist(map(filter(copy(l:results), 'len(v:val)'), '{"filename": v:val, "lnum": 1}'))
 
@@ -317,7 +333,7 @@ function! RgSearchChecklist()
     let pattern = "' \\\[ \\\]'"
 
     " Compose the ripgrep command for use with Vim's quickfix, ensuring --vimgrep for proper formatting.
-    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki |sort'
+    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki/'
 
     " Execute the rg command and get the results
     let results = systemlist(command)
@@ -348,7 +364,7 @@ function! RgSearchWaitingChecklist()
 
     " Compose the command to search with rg and exclude any '[X]' patterns
     " Note: We use 'rg -v "\[X\]"' to filter out lines containing '[X]' after the initial search
-    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki | rg -v "\[X\]" | sort'
+    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki/ | rg -v "\[X\]"'
 
     " Execute the rg command and get the results
     let results = systemlist(command)
@@ -379,8 +395,16 @@ function! SearchTag()
         return
     endif
 
-    let tags_file = './tags'
-    let command = 'rg --no-heading --vimgrep ' . shellescape(tag_pattern) . ' ' . shellescape(tags_file) . ' | sort'
+    let git_root = system('git rev-parse --show-toplevel')
+    let git_root = substitute(git_root, '\n', '', 'g')
+
+    if v:shell_error || git_root == ''
+        echo 'Not inside a Git repository.'
+        return
+    endif
+
+    let tags_file = git_root . '/tags'
+    let command = 'rg --no-heading --vimgrep ' . shellescape(tag_pattern) . ' ' . shellescape(tags_file)
 
     let results = systemlist(command)
     let formatted_results = map(results, 'FormatTagResult(v:val)')
