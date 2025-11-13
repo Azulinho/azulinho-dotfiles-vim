@@ -47,7 +47,33 @@ let &t_SI.="\e[5 q"
 let &t_SR.="\e[4 q"
 let &t_EI.="\e[1 q"
 
-set background=light
+" Automatic background switching based on time of day
+function! SetBackgroundBasedOnTime()
+    let l:hour = strftime("%H")
+    if l:hour >= 18 || l:hour < 6
+        " Evening/Night: 6 PM to 6 AM
+        set background=dark
+    else
+        " Day: 6 AM to 6 PM
+        set background=light
+    endif
+endfunction
+
+" Manual background toggle function
+function! ToggleBackground()
+    if &background == "light"
+        set background=dark
+        echo "Switched to dark background"
+    else
+        set background=light
+        echo "Switched to light background"
+    endif
+    " Reapply colorscheme to reflect the change
+    colorscheme PaperColor
+endfunction
+
+" Set background automatically on startup
+call SetBackgroundBasedOnTime()
 colorscheme PaperColor
 
 set path+=$PWD/**
@@ -829,6 +855,9 @@ nmap <leader>a  <Plug>(coc-codeaction-selected)
 nmap <leader>ac  <Plug>(coc-codeaction)
 " Apply AutoFix to problem on the current line
 nmap <leader>qf  <Plug>(coc-fix-current)
+
+" Background toggle
+nmap <leader>bg :call ToggleBackground()<CR>
 
 " Map function and class text objects
 xmap if <Plug>(coc-funcobj-i)
