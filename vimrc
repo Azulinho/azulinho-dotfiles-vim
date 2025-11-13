@@ -87,7 +87,6 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/NLKNguyen/papercolor-theme.git', 'papercolor-theme')
   call GitCloneDepth1('https://github.com/c9s/simple-commenter.vim.git', 'simple-commenter.vim')
   call GitCloneDepth1('https://github.com/preservim/tagbar.git', 'tagbar')
-  call GitCloneDepth1('https://github.com/SirVer/ultisnips.git', 'ultisnips')
   call GitCloneDepth1('https://github.com/jreybert/vimagit.git', 'vimagit')
   call GitCloneDepth1('https://github.com/easymotion/vim-easymotion.git', 'vim-easymotion')
   call GitCloneDepth1('https://github.com/airblade/vim-gitgutter.git', 'vim-gitgutter')
@@ -464,19 +463,6 @@ map <silent>,,           <Plug>(one-line-comment)
   " Disable search engine ignore vcs untracked files
   " (default: false, search engine will ignore vcs untracked files)
   let g:any_jump_disable_vcs_ignore = 1
-
-
-" ultisnips
-
-	" Trigger configuration. You need to change this to something other than <tab> if you use one of the following:
-	" - https://github.com/Valloric/YouCompleteMe
-	" - https://github.com/nvim-lua/completion-nvim
-	let g:UltiSnipsExpandTrigger="<tab>"
-	let g:UltiSnipsJumpForwardTrigger="<c-b>"
-	let g:UltiSnipsJumpBackwardTrigger="<c-z>"
-
-	" If you want :UltiSnipsEdit to split your window.
-  let g:UltiSnipsEditSplit="vertical"
 
 
 " ale
