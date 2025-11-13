@@ -17,6 +17,7 @@ EXTENSIONS=(
     "coc-vimlsp:iamcco"
     "coc-texlab:fannheyward"
     "coc-eslint:fannheyward"
+    "coc-java:neoclide"
     "terraform-ls:hashicorp"
 )
 

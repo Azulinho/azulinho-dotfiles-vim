@@ -719,8 +719,9 @@ let g:coc_global_extensions = [
       \ 'coc-css',
       \ 'coc-vimlsp',
       \ 'coc-texlab',
-      \ 'coc-eslint'
-\ ]
+      \ 'coc-eslint',
+      \ 'coc-java'
+      \ ]
 
 " coc.nvim settings
 let g:coc_user_config = {
@@ -954,6 +955,14 @@ hi TabLineSel ctermfg=15 ctermbg=31 guifg=#ffffff guibg=#0087ff
 hi TabLine ctermfg=7 ctermbg=238 guifg=#cccccc guibg=#444444
 
 
+" Disable markdown syntax in Java to avoid missing group errors
+let g:java_ignore_markdown = 1
+
 " detect .tf and .hcl files
 autocmd BufNewFile,BufRead *.tf set filetype=terraform
 autocmd BufNewFile,BufRead *.hcl set filetype=terraform
+
+" detect Java files
+autocmd BufNewFile,BufRead *.java set filetype=java
+autocmd BufNewFile,BufRead *.gradle set filetype=groovy
+autocmd BufNewFile,BufRead *.kt set filetype=kotlin
