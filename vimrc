@@ -76,7 +76,7 @@ endfunction
 
 function PluginInstall()
   call GitCloneDepth1('https://github.com/mileszs/ack.vim.git', 'ack.vim')
-  call GitCloneDepth1('https://github.com/dense-analysis/ale.git', 'ale')
+  call GitCloneDepth1('https://github.com/neoclide/coc.nvim.git', 'coc.nvim')
   call GitCloneDepth1('https://github.com/junegunn/vim-easy-align.git', 'Align')
   call GitCloneDepth1('https://github.com/pechorin/any-jump.vim.git', 'any-jump.vim')
   call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
@@ -465,10 +465,6 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:any_jump_disable_vcs_ignore = 1
 
 
-" ale
-	" Set this variable to 1 to fix files when you save them.
-	let g:ale_fix_on_save = 1
-
 	" Enable completion where available.
 	" This setting must be set before ALE is loaded.
 	"
@@ -662,29 +658,181 @@ map <silent>,,           <Plug>(one-line-comment)
 " Custom statusline replacement for vim-airline
 set laststatus=2  " Always show statusline
 
-" ALE status function
-function! GetALEStatus()
-  if exists('g:loaded_ale') && exists('*ale#statusline#Count')
-    let l:counts = ale#statusline#Count(bufnr('%'))
-    let l:total = get(l:counts, 'total', 0)
-    if l:total > 0
-      let l:errors = get(l:counts, 'error', 0)
-      let l:warnings = get(l:counts, 'warning', 0)
-      let l:result = ''
-      if l:errors > 0
-        let l:result .= 'E:' . l:errors
-      endif
-      if l:warnings > 0
-        if !empty(l:result)
-          let l:result .= ' '
-        endif
-        let l:result .= 'W:' . l:warnings
-      endif
-      return l:result
+" coc.nvim status function
+function! GetCocStatus()
+  if exists('g:loaded_coc')
+    let l:info = get(b:, 'coc_diagnostic_info', {})
+    if empty(l:info)
+      return get(g:, 'coc_status', '')
     endif
+    let l:errors = get(l:info, 'error', 0)
+    let l:warnings = get(l:info, 'warning', 0)
+    let l:result = ''
+    if l:errors > 0
+      let l:result .= 'E:' . l:errors
+    endif
+    if l:warnings > 0
+      if !empty(l:result)
+        let l:result .= ' '
+      endif
+      let l:result .= 'W:' . l:warnings
+    endif
+    return l:result
   endif
   return ''
 endfunction
+
+" coc.nvim configuration
+" Set up coc.nvim with equivalent settings to ALE
+"
+" OFFLINE INSTALLATION NOTES:
+" ========================
+" If you need to install extensions offline:
+" 1. Run: ~/.vim/download_coc_extensions.sh (when online)
+" 2. Copy coc_extensions_offline to offline machine
+" 3. Run: ~/.vim/install_coc_extensions_offline.sh (when offline)
+" 4. Restart Vim
+"
+" Backup/restore extensions:
+"  ~/.vim/coc_extensions_backup.sh backup
+"  ~/.vim/coc_extensions_backup.sh restore
+"
+
+" Use coc.nvim for completion
+let g:coc_global_extensions = [
+      \ 'coc-go',
+      \ 'coc-pyright',
+      \ 'coc-tsserver',
+      \ 'coc-json',
+      \ 'coc-yaml',
+      \ 'coc-html',
+      \ 'coc-css',
+      \ 'coc-vimlsp',
+      \ 'coc-texlab',
+      \ 'coc-sh',
+      \ 'coc-eslint'
+\ ]
+
+" coc.nvim settings
+let g:coc_user_config = {
+      \ 'diagnostic.enable': v:true,
+      \ 'diagnostic.displayByAle': v:false,
+      \ 'diagnostic.enableSign': v:true,
+      \ 'diagnostic.enableMessage': 'always',
+      \ 'diagnostic.messageTarget': 'float',
+      \ 'diagnostic.signOffset': 1,
+      \ 'diagnostic.errorSign': 'E>',
+      \ 'diagnostic.warningSign': 'W>',
+      \ 'diagnostic.infoSign': 'I>',
+      \ 'diagnostic.hintSign': 'H>',
+      \ 'suggest.enablePreselect': v:true,
+      \ 'suggest.noselect': v:false,
+      \ 'suggest.enablePreview': v:true,
+      \ 'suggest.maxCompleteItemCount': 50,
+      \ 'suggest.triggerCompletionWait': 50,
+      \ 'suggest.minTriggerInputLength': 1,
+      \ 'codeLens.enable': v:true,
+      \ 'codeLens.position': 'eol',
+      \ 'colors.enable': v:true,
+      \ 'colors.highlightPriority': 10,
+      \ 'coc.preferences.formatOnSaveFiletypes': [
+      \   'javascript', 'typescript', 'python', 'go', 'json', 'yaml'
+      \ ],
+      \ 'go.goplsOptions': {
+      \   'staticcheck': v:true,
+      \   'usePlaceholders': v:true
+      \ },
+      \ 'python.linting.enabled': v:true,
+      \ 'python.linting.pylintEnabled': v:true,
+      \ 'python.linting.mypyEnabled': v:true,
+      \ 'python.formatting.provider': 'black',
+      \ 'terraform.languageServer': {
+      \   'enabled': v:true
+      \ }
+\ }
+
+" Key mappings for coc.nvim
+" Use <Tab> and <S-Tab> for navigate completion list
+inoremap <silent><expr> <Tab>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<Tab>" :
+      \ coc#refresh()
+inoremap <expr><S-Tab> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion
+if has('nvim')
+  inoremap <silent><expr> <c-space> coc#refresh()
+else
+  inoremap <silent><expr> <c-@> coc#refresh()
+endif
+
+" Make <CR> auto-select the first completion item and notify coc.nvim to
+" format on enter, <cr> could be remapped by other vim plugin
+inoremap <silent><expr> <cr> pumvisible() ? coc#_select_confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+
+" Use `[g` and `]g` to navigate diagnostics
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+" GoTo code navigation
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
+" Use K to show documentation in preview window
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  elseif (coc#rpc#ready())
+    call CocActionAsync('doHover')
+  else
+    execute '!' . &keywordprg . " " . expand('<cword>')
+  endif
+endfunction
+
+" Symbol renaming
+nmap <leader>rn <Plug>(coc-rename)
+
+" Formatting selected code
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
+
+" Applying codeAction to the selected buffer
+xmap <leader>a  <Plug>(coc-codeaction-selected)
+nmap <leader>a  <Plug>(coc-codeaction-selected)
+
+" Remap keys for applying codeAction to the current buffer
+nmap <leader>ac  <Plug>(coc-codeaction)
+" Apply AutoFix to problem on the current line
+nmap <leader>qf  <Plug>(coc-fix-current)
+
+" Map function and class text objects
+xmap if <Plug>(coc-funcobj-i)
+omap if <Plug>(coc-funcobj-i)
+xmap af <Plug>(coc-funcobj-a)
+omap af <Plug>(coc-funcobj-a)
+
+" Use CTRL-S for selections ranges
+nmap <silent> <C-s> <Plug>(coc-range-select)
+xmap <silent> <C-s> <Plug>(coc-range-select)
+
+" Add `:Format` command to format current buffer
+command! -nargs=0 Format :call CocAction('format')
+
+" Add `:Fold` command to fold current buffer
+command! -nargs=? Fold :call     CocAction('fold', <f-args>)
+
+" Add `:OR` command for organize imports of the current buffer
+command! -nargs=0 OR   :call     CocAction('runCommand', 'editor.action.organizeImport')
 
 " Custom statusline function
 function! CustomStatusline()
@@ -708,8 +856,8 @@ function! CustomStatusline()
     let l:right .= ' | %{FugitiveHead()}'
   endif
 
-  " ALE integration (show errors/warnings)
-  let l:right .= ' | ' . GetALEStatus()
+  " coc.nvim integration (show errors/warnings)
+  let l:right .= ' | ' . GetCocStatus()
 
   return l:left . '%=' . l:right
 endfunction
@@ -754,8 +902,8 @@ autocmd OptionSet paste redrawstatus
 autocmd InsertEnter,InsertLeave * redrawstatus
 autocmd ModeChanged * redrawstatus
 
-" Force statusline update when ALE results change
-autocmd User ALELintPost redrawstatus
+" Force statusline update when coc.nvim results change
+autocmd User CocDiagnosticChange redrawstatus
 
 " Tabline (replaces airline tabline)
 set showtabline=2
