@@ -114,6 +114,7 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/Exafunction/windsurf.vim.git', 'windsurf.vim')
   call GitCloneDepth1('https://github.com/pasky/claude.vim.git', 'claude.vim')
   call GitCloneDepth1('https://github.com/puremourning/vimspector.git', 'vimspector')
+  call GitCloneDepth1('https://github.com/tpope/vim-fugitive.git', 'vim-fugitive')
 endfunction
 
 command! PluginInstall call PluginInstall()
@@ -124,7 +125,7 @@ nnoremap <leader>snp :set nopaste!<CR>
 nnoremap <leader>w :w!<CR>
 
 
-let s:rg_command="rg -i --vimgrep --hidden --no-ignore -g '!tags' "
+let s:rg_command="rg -i --vimgrep --no-hidden --no-ignore -g '!tags' "
 
 " FormatFile
 augroup FormatFile
@@ -192,7 +193,7 @@ command! RgPromptWord call s:rg_prompt_word()
 
 
 function! SearchWithFd(search_pattern)
-    let l:cmd = 'cd ' . FindGitRoot() . ' && fd --type f ' . shellescape(a:search_pattern)
+    let l:cmd = 'cd ' . FindGitRoot() . ' && fd . | rg -i ' . shellescape(a:search_pattern)
     let l:results = split(system(l:cmd), "\n")
     call setqflist(map(filter(copy(l:results), 'len(v:val)'), '{"filename": v:val, "lnum": 1}'))
 
@@ -520,6 +521,9 @@ map <silent>,,           <Plug>(one-line-comment)
 	" source for other completion plugins, like Deoplete.
 	let g:ale_completion_enabled = 1
 
+  let g:ale_set_quickfix = 1
+  let g:ale_set_loclist = 0
+
 	" Set this. Airline will handle the rest.
 	let g:airline#extensions#ale#enabled = 1
 
@@ -536,12 +540,30 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:ale_terraform_ls_options = 'serve'
   let g:ale_terraform_langserver_executable = 'terraform-lsp'
 
+  let g:ale_java_jdtls_executable = 'jdtls'
+
+  let jdtls_launcher = expand('/usr/share/java/jdtls/plugins/org.eclipse.equinox.launcher_*.jar')
+  let jdtls_config   = expand('/usr/share/java/jdtls/config_linux')
+  let jdtls_workspace = expand('~/jdtls-workspace')
+
+  let g:ale_java_jdtls_config = [
+      \ '-Declipse.application=org.eclipse.jdt.ls.core.id1',
+      \ '-Dosgi.bundles.defaultStartLevel=4',
+      \ '-Declipse.product=org.eclipse.jdt.ls.core.product',
+      \ '-Dlog.protocol=true',
+      \ '-Dlog.level=ALL',
+      \ '-Xmx1G',
+      \ '-jar', jdtls_launcher,
+      \ '-configuration', jdtls_config,
+      \ '-data', jdtls_workspace,
+    \]
   let g:ale_linters = {
-        "\ 'terraform': ['terraform_ls', 'terraform_lsp', 'tflint', 'tfsec'],
         \ 'terraform': ['terraform_lsp', 'tflint', 'tfsec'],
         \ 'go': ['gopls', 'golangci_lint'],
         \ 'python': ['mypy', 'pylint', 'pyright', 'black'],
+        \ 'java': ['jdtls']
    \}
+        "\ 'terraform': ['terraform_ls', 'terraform_lsp', 'tflint', 'tfsec'],
   let g:ale_fixers = {
         \ 'terraform': ['terraform'],
         \ 'go': ['gofmt'],
@@ -673,3 +695,31 @@ map <silent>,,           <Plug>(one-line-comment)
                         \ 'syntax': 'markdown', 'ext': 'md'}]
 
   let g:vimwiki_global_ext = 0
+
+
+  " fugitive
+  function! Grebaseinteractive(args) abort
+        let $GIT_EDITOR="sed -ie '0,/pick/ s/pick/edit/'"
+            exec 'Git rebase --preserve-merges --interactive' a:args . '^'
+                Grebase --edit-todo
+  endfunction
+  command! -nargs=+ -complete=customlist,fugitive#Complete Grebaseinteractive :call g:Grebaseinteractive('<q-args>')
+
+	function! g:GitEditTodo(mods) abort
+			exec a:mods . ' Gsplit .git/rebase-merge/git-rebase-todo'
+	endfunction
+
+	function! g:GitRebaseInteractive(mods, args) abort
+			let l:previous_editor = $GIT_EDITOR
+			let $GIT_EDITOR='exit 0;'
+			try
+					exec 'Git rebase --interactive ' . a:args
+			finally
+					let $GIT_EDITOR = l:previous_editor
+			endtry
+			if !v:shell_error
+					call g:GitEditTodo(a:mods)
+			endif
+	endfunction
+	command! -nargs=+ -complete=customlist,fugitive#Complete Grebaseinteractive :call g:GitRebaseInteractive('<mods>', '<q-args>')
+	command! -nargs=0 Gedittodo :call g:GitEditTodo('<mods>')
