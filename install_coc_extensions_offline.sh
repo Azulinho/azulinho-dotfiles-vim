@@ -27,13 +27,17 @@ for ext_dir in "$SOURCE_DIR"/*; do
         
         echo "Installing $ext_name..."
         
-        # Copy extension to target directory
-        cp -r "$ext_dir" "$target_ext_dir"
-        
-        # Create package.json if it doesn't exist (some extensions need this)
-        if [ ! -f "$target_ext_dir/package.json" ] && [ -f "$target_ext_dir/package.json" ]; then
-            cp "$target_ext_dir/package.json" "$target_ext_dir/"
+        # Remove existing extension if it exists
+        if [ -d "$target_ext_dir" ]; then
+            rm -rf "$target_ext_dir"
         fi
+        
+        # Create target directory
+        mkdir -p "$target_ext_dir"
+        
+        # Copy files excluding .git directory using tar for reliability
+        cd "$ext_dir"
+        tar --exclude='.git' -cf - . | tar -xf - -C "$target_ext_dir"
         
         echo "✓ $ext_name installed"
     fi

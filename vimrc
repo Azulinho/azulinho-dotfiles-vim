@@ -148,6 +148,11 @@ endfunction
 " Change the current directory to the git root on vim enter
 autocmd VimEnter * call ChangeToGitRoot()
 
+" Terraform file type detection
+autocmd BufRead,BufNewFile *.tf setfiletype terraform
+autocmd BufRead,BufNewFile *.hcl setfiletype hcl
+autocmd BufRead,BufNewFile *.tfvars setfiletype terraform
+
 
 " RunToQuickfix
 command! -nargs=1 RunToQuickfix cexpr system(<q-args>) | copen
@@ -688,10 +693,15 @@ endfunction
 " OFFLINE INSTALLATION NOTES:
 " ========================
 " If you need to install extensions offline:
-" 1. Run: ~/.vim/download_coc_extensions.sh (when online)
+" 1. Run: ~/.vim/download_coc_extensions_minimal.sh (when online)
 " 2. Copy coc_extensions_offline to offline machine
 " 3. Run: ~/.vim/install_coc_extensions_offline.sh (when offline)
 " 4. Restart Vim
+"
+" TERRAFORM LSP SETUP:
+" ====================
+" terraform-ls extension included, but needs manual installation:
+"   go install github.com/hashicorp/terraform-ls@latest
 "
 " Backup/restore extensions:
 "  ~/.vim/coc_extensions_backup.sh backup
@@ -709,7 +719,6 @@ let g:coc_global_extensions = [
       \ 'coc-css',
       \ 'coc-vimlsp',
       \ 'coc-texlab',
-      \ 'coc-sh',
       \ 'coc-eslint'
 \ ]
 
@@ -746,8 +755,13 @@ let g:coc_user_config = {
       \ 'python.linting.pylintEnabled': v:true,
       \ 'python.linting.mypyEnabled': v:true,
       \ 'python.formatting.provider': 'black',
-      \ 'terraform.languageServer': {
-      \   'enabled': v:true
+      \ 'terraform': {
+      \   'languageServer': {
+      \     'enabled': v:true,
+      \     'path': 'terraform-ls',
+      \     'args': ['serve'],
+      \     'maxFileSize': 1048576
+      \   }
       \ }
 \ }
 
@@ -938,3 +952,8 @@ hi StatusLine ctermfg=15 ctermbg=238 guifg=#ffffff guibg=#444444
 hi StatusLineNC ctermfg=7 ctermbg=238 guifg=#cccccc guibg=#444444
 hi TabLineSel ctermfg=15 ctermbg=31 guifg=#ffffff guibg=#0087ff
 hi TabLine ctermfg=7 ctermbg=238 guifg=#cccccc guibg=#444444
+
+
+" detect .tf and .hcl files
+autocmd BufNewFile,BufRead *.tf set filetype=terraform
+autocmd BufNewFile,BufRead *.hcl set filetype=terraform
