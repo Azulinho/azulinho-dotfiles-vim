@@ -90,9 +90,6 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/preservim/tagbar.git', 'tagbar')
   call GitCloneDepth1('https://github.com/SirVer/ultisnips.git', 'ultisnips')
   call GitCloneDepth1('https://github.com/jreybert/vimagit.git', 'vimagit')
-  call GitCloneDepth1('https://github.com/madox2/vim-ai.git', 'vim-ai')
-  call GitCloneDepth1('https://github.com/vim-airline/vim-airline.git', 'vim-airline')
-  call GitCloneDepth1('https://github.com/vim-airline/vim-airline-themes.git', 'vim-airline-themes')
   call GitCloneDepth1('https://github.com/easymotion/vim-easymotion.git', 'vim-easymotion')
   call GitCloneDepth1('https://github.com/airblade/vim-gitgutter.git', 'vim-gitgutter')
   call GitCloneDepth1('https://github.com/fatih/vim-go.git', 'vim-go')
@@ -100,13 +97,11 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/preservim/vim-indent-guides.git', 'vim-indent-guides')
   call GitCloneDepth1('https://github.com/skywind3000/vim-navigator.git', 'vim-navigator')
   call GitCloneDepth1('https://github.com/sheerun/vim-polyglot.git', 'vim-polyglot')
-  call GitCloneDepth1('https://github.com/skywind3000/vim-quickui.git', 'vim-quickui')
   call GitCloneDepth1('https://github.com/mhinz/vim-signify.git', 'vim-signify')
   call GitCloneDepth1('https://github.com/honza/vim-snippets.git', 'vim-snippets')
   call GitCloneDepth1('https://github.com/mhinz/vim-startify.git', 'vim-startify')
   call GitCloneDepth1('https://github.com/vim-test/vim-test.git', 'vim-test')
   call GitCloneDepth1('https://github.com/vimwiki/vimwiki.git', 'vimwiki')
-  "call GitCloneDepth1('https://github.com/Donaldttt/fuzzyy.git', 'fuzzy')
   call GitCloneDepth1('https://github.com/Exafunction/windsurf.vim.git', 'windsurf.vim')
   call GitCloneDepth1('https://github.com/puremourning/vimspector.git', 'vimspector')
   call GitCloneDepth1('https://github.com/tpope/vim-fugitive.git', 'vim-fugitive')
@@ -473,25 +468,6 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:any_jump_disable_vcs_ignore = 1
 
 
-" vim-test
-
-	nmap <silent> <leader>t :TestNearest<CR>
-	nmap <silent> <leader>T :TestFile<CR>
-	nmap <silent> <leader>a :TestSuite<CR>
-	nmap <silent> <leader>l :TestLast<CR>
-	nmap <silent> <leader>g :TestVisit<CR>
-
-
-" vim-sneak
-	map f <Plug>Sneak_s
-	map F <Plug>Sneak_S
-
-	map f <Plug>Sneak_f
-	map F <Plug>Sneak_F
-	map t <Plug>Sneak_t
-	map T <Plug>Sneak_T
-
-
 " ultisnips
 
 	" Trigger configuration. You need to change this to something other than <tab> if you use one of the following:
@@ -520,7 +496,6 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:ale_set_loclist = 0
 
 	" Set this. Airline will handle the rest.
-	let g:airline#extensions#ale#enabled = 1
 
   let g:ale_go_go_executable = 'go'
   let g:ale_go_golangci_lint_executable = 'golangci-lint'
@@ -652,12 +627,10 @@ map <silent>,,           <Plug>(one-line-comment)
   let g:EasyMotion_smartcase = 1
   let g:EasyMotion_landing_highlight = 0
   nmap <Leader>bm <Plug>(easymotion-in-f2)
-  map  / <Plug>(easymotion-sn)
-  omap / <Plug>(easymotion-tn)
   " These `n` and `N` mappings are optional, but they are useful for
   " repeating the last search in the forward or backward direction.
-  nmap n <Plug>(easymotion-next)
-  nmap N <Plug>(easymotion-prev)
+  " nmap n <Plug>(easymotion-next)
+  " nmap N <Plug>(easymotion-prev)
 
 
   " guttentags
@@ -667,13 +640,6 @@ map <silent>,,           <Plug>(one-line-comment)
   " magit
   let g:magit_git_cmd = 'git'
 
-
-  " vim-ai
-  let g:vim_ai_debug=1
-  let g:vim_ai_debug_log_file = "/tmp/vim_ai_debug.log"
-
-  " airline
-  let g:airline_inactive_collapse=1
 
 
   let g:vimwiki_list = [{'path': '~/vimwiki/',
@@ -708,3 +674,135 @@ map <silent>,,           <Plug>(one-line-comment)
 	endfunction
 	command! -nargs=+ -complete=customlist,fugitive#Complete Grebaseinteractive :call g:GitRebaseInteractive('<mods>', '<q-args>')
 	command! -nargs=0 Gedittodo :call g:GitEditTodo('<mods>')
+
+" Custom statusline replacement for vim-airline
+set laststatus=2  " Always show statusline
+
+" ALE status function
+function! GetALEStatus()
+  if exists('g:loaded_ale') && exists('*ale#statusline#Count')
+    let l:counts = ale#statusline#Count(bufnr('%'))
+    let l:total = get(l:counts, 'total', 0)
+    if l:total > 0
+      let l:errors = get(l:counts, 'error', 0)
+      let l:warnings = get(l:counts, 'warning', 0)
+      let l:result = ''
+      if l:errors > 0
+        let l:result .= 'E:' . l:errors
+      endif
+      if l:warnings > 0
+        if !empty(l:result)
+          let l:result .= ' '
+        endif
+        let l:result .= 'W:' . l:warnings
+      endif
+      return l:result
+    endif
+  endif
+  return ''
+endfunction
+
+" Custom statusline function
+function! CustomStatusline()
+  " Left side: mode, filename, modified flag
+  let l:left = ''
+  let l:left .= '%#StatusLine#' . ModeIndicator() . ' '
+  let l:left .= '%f'  " Full filename
+  let l:left .= '%m'  " Modified flag
+  let l:left .= '%r'  " Read-only flag
+  let l:left .= '%h'  " Help flag
+
+  " Right side: file type, encoding, line/col, git branch
+  let l:right = ''
+  let l:right .= '%y'  " File type
+  let l:right .= ' | %{&fileencoding?&fileencoding:&encoding}'
+  let l:right .= ' | %l:%c'  " Line:Column
+  let l:right .= ' | %P'  " Percentage through file
+
+  " Git branch (requires fugitive)
+  if exists('g:loaded_fugitive')
+    let l:right .= ' | %{FugitiveHead()}'
+  endif
+
+  " ALE integration (show errors/warnings)
+  let l:right .= ' | ' . GetALEStatus()
+
+  return l:left . '%=' . l:right
+endfunction
+
+" Mode indicator function
+function! ModeIndicator()
+  let l:mode = mode()
+  let l:mode_text = ""
+
+  " Determine base mode
+  if l:mode == "n"
+    let l:mode_text = "NORMAL"
+  elseif l:mode == "i"
+    let l:mode_text = "INSERT"
+  elseif l:mode == "v"
+    let l:mode_text = "VISUAL"
+  elseif l:mode == "V"
+    let l:mode_text = "V-LINE"
+  elseif l:mode == "s"
+    let l:mode_text = "SELECT"
+  elseif l:mode == "R"
+    let l:mode_text = "REPLACE"
+  else
+    let l:mode_text = l:mode
+  endif
+
+  " Add PASTE indicator if paste mode is active
+  if &paste
+    return l:mode_text . " [PASTE]"
+  else
+    return l:mode_text
+  endif
+endfunction
+
+" Set the statusline
+set statusline=%!CustomStatusline()
+
+" Force statusline update when paste mode changes
+autocmd OptionSet paste redrawstatus
+
+" Force statusline update on mode changes
+autocmd InsertEnter,InsertLeave * redrawstatus
+autocmd ModeChanged * redrawstatus
+
+" Force statusline update when ALE results change
+autocmd User ALELintPost redrawstatus
+
+" Tabline (replaces airline tabline)
+set showtabline=2
+set tabline=%!CustomTabline()
+
+function! CustomTabline()
+  let l:s = ''
+  for i in range(1, tabpagenr('$'))
+    let l:bufnr = tabpagebuflist(i)[tabpagewinnr(i) - 1]
+    let l:bufname = bufname(l:bufnr)
+    let l:bufname = fnamemodify(l:bufname, ':t')
+    if empty(l:bufname)
+      let l:bufname = '[No Name]'
+    endif
+
+    " Highlight current tab
+    if i == tabpagenr()
+      let l:s .= '%#TabLineSel#'
+    else
+      let l:s .= '%#TabLine#'
+    endif
+
+    let l:s .= ' ' . i . ': ' . l:bufname . ' '
+  endfor
+
+  let l:s .= '%#TabLineFill#%T'
+  return l:s
+endfunction
+
+" Optional: Custom highlight groups
+hi StatusLine ctermfg=15 ctermbg=238 guifg=#ffffff guibg=#444444
+hi StatusLineNC ctermfg=7 ctermbg=238 guifg=#cccccc guibg=#444444
+hi TabLineSel ctermfg=15 ctermbg=31 guifg=#ffffff guibg=#0087ff
+hi TabLine ctermfg=7 ctermbg=238 guifg=#cccccc guibg=#444444
