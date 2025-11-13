@@ -47,7 +47,7 @@ let &t_SI.="\e[5 q"
 let &t_SR.="\e[4 q"
 let &t_EI.="\e[1 q"
 
-set background=dark
+set background=light
 colorscheme PaperColor
 
 set path+=$PWD/**
@@ -79,9 +79,7 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/dense-analysis/ale.git', 'ale')
   call GitCloneDepth1('https://github.com/junegunn/vim-easy-align.git', 'Align')
   call GitCloneDepth1('https://github.com/pechorin/any-jump.vim.git', 'any-jump.vim')
-  call GitCloneDepth1('https://github.com/romainl/Apprentice.git', 'Apprentice')
   call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
-  "call GitCloneDepth1('https://github.com/github/copilot.vim.git', 'copilot.vim')
   call GitCloneDepth1('https://github.com/Raimondi/delimitMate.git', 'delimitMate')
   call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
   call GitCloneDepth1('https://github.com/morhetz/gruvbox.git', 'gruvbox')
@@ -89,14 +87,12 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/preservim/nerdtree.git', 'nerdtree')
   call GitCloneDepth1('https://github.com/NLKNguyen/papercolor-theme.git', 'papercolor-theme')
   call GitCloneDepth1('https://github.com/c9s/simple-commenter.vim.git', 'simple-commenter.vim')
-  call GitCloneDepth1('https://github.com/tek256/simple-dark.git', 'simple-dark')
   call GitCloneDepth1('https://github.com/preservim/tagbar.git', 'tagbar')
   call GitCloneDepth1('https://github.com/SirVer/ultisnips.git', 'ultisnips')
   call GitCloneDepth1('https://github.com/jreybert/vimagit.git', 'vimagit')
   call GitCloneDepth1('https://github.com/madox2/vim-ai.git', 'vim-ai')
   call GitCloneDepth1('https://github.com/vim-airline/vim-airline.git', 'vim-airline')
   call GitCloneDepth1('https://github.com/vim-airline/vim-airline-themes.git', 'vim-airline-themes')
-  call GitCloneDepth1('https://github.com/blueyed/vim-diminactive.git', 'vim-diminactive')
   call GitCloneDepth1('https://github.com/easymotion/vim-easymotion.git', 'vim-easymotion')
   call GitCloneDepth1('https://github.com/airblade/vim-gitgutter.git', 'vim-gitgutter')
   call GitCloneDepth1('https://github.com/fatih/vim-go.git', 'vim-go')
@@ -112,7 +108,6 @@ function PluginInstall()
   call GitCloneDepth1('https://github.com/vimwiki/vimwiki.git', 'vimwiki')
   "call GitCloneDepth1('https://github.com/Donaldttt/fuzzyy.git', 'fuzzy')
   call GitCloneDepth1('https://github.com/Exafunction/windsurf.vim.git', 'windsurf.vim')
-  call GitCloneDepth1('https://github.com/pasky/claude.vim.git', 'claude.vim')
   call GitCloneDepth1('https://github.com/puremourning/vimspector.git', 'vimspector')
   call GitCloneDepth1('https://github.com/tpope/vim-fugitive.git', 'vim-fugitive')
 endfunction
@@ -635,7 +630,6 @@ map <silent>,,           <Plug>(one-line-comment)
     let g:navigator.c.t = [":TagbarToggle",'TagBar']
     "let g:navigator.c.t = [':FuzzyTagsRoot','search-tags']
     let g:navigator.c.t = [':SearchTag','search-tags']
-    let g:navigator.c.o =  [':ClaudeChat', 'Claude-Open-Chat']
   let g:navigator.d = { 'name' : '+Debug' }
     let g:navigator.d.L = [':call vimspector#Launch()','Vimspector-launch']
     let g:navigator.d.t = [':call vimspector#ToggleBreakpoint()','Vimspector-Toggle-Breakpoint']
@@ -651,7 +645,6 @@ map <silent>,,           <Plug>(one-line-comment)
   " (c)code
   let g:navigator_visual.c = { 'name' : '+code' }
     let g:navigator_visual.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
-    let g:navigator_visual.c.i =  ['<Plug>(ClaudeImplement)', 'Claude-Implement']
 
 
 " easyMotion
@@ -681,14 +674,6 @@ map <silent>,,           <Plug>(one-line-comment)
 
   " airline
   let g:airline_inactive_collapse=1
-
-  "claude.vim
-  let g:claude_api_key = $CLAUDE_API_KEY
-
-  let g:claude_map_implement = "<Leader>ci"
-  let g:claude_map_open_chat = "<Leader>cc"
-  let g:claude_map_send_chat_message = "<C-]>"
-  let g:claude_map_cancel_response = "<Leader>cx"
 
 
   let g:vimwiki_list = [{'path': '~/vimwiki/',
