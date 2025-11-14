@@ -42,7 +42,6 @@ function! PluginInstall()
     call GitCloneDepth1('https://github.com/neoclide/coc.nvim.git', 'coc.nvim')
 
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
-    call GitCloneDepth1('https://github.com/Raimondi/delimitMate.git', 'delimitMate')
     call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
     call GitCloneDepth1('https://github.com/preservim/nerdtree.git', 'nerdtree')
     call GitCloneDepth1('https://github.com/NLKNguyen/papercolor-theme.git', 'papercolor-theme')
@@ -300,6 +299,13 @@ hi TabLine ctermfg=7 ctermbg=238 guifg=#cccccc guibg=#444444
 nnoremap <leader>sp :set paste!<CR>
 nnoremap <leader>snp :set nopaste!<CR>
 nnoremap <leader>w :w!<CR>
+
+" Auto-closing delimiters (replaces DelimitMate)
+inoremap ( ()<Left>
+inoremap [ []<Left>
+inoremap { {}<Left>
+inoremap " ""<Left>
+inoremap ' ''<Left>
 
 " Background toggle
 nmap <leader>bg :call ToggleBackground()<CR>
