@@ -40,7 +40,7 @@ endfunction
 function! PluginInstall()
     call GitCloneDepth1('https://github.com/mileszs/ack.vim.git', 'ack.vim')
     call GitCloneDepth1('https://github.com/neoclide/coc.nvim.git', 'coc.nvim')
-    call GitCloneDepth1('https://github.com/junegunn/vim-easy-align.git', 'Align')
+
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
     call GitCloneDepth1('https://github.com/Raimondi/delimitMate.git', 'delimitMate')
     call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
