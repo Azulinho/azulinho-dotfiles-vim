@@ -52,7 +52,6 @@ function! PluginInstall()
     call GitCloneDepth1('https://github.com/easymotion/vim-easymotion.git', 'vim-easymotion')
     call GitCloneDepth1('https://github.com/airblade/vim-gitgutter.git', 'vim-gitgutter')
     call GitCloneDepth1('https://github.com/fatih/vim-go.git', 'vim-go')
-    call GitCloneDepth1('https://github.com/ludovicchabant/vim-gutentags.git', 'vim-gutentags')
 
     call GitCloneDepth1('https://github.com/skywind3000/vim-navigator.git', 'vim-navigator')
     call GitCloneDepth1('https://github.com/sheerun/vim-polyglot.git', 'vim-polyglot')
@@ -645,11 +644,21 @@ let g:EasyMotion_smartcase = 1
 let g:EasyMotion_landing_highlight = 0
 nmap <Leader>bm <Plug>(easymotion-in-f2)
 
-" ===== GutenTags =====
-let g:guttentags_enabled=1
-let g:guttentags_ctags_executable='ctags'
 
-" ===== VimWiki =====
+" ===== Tag Generation (replaces GutenTags) =====
+let g:tag_job_id = 0
+function! GenerateTagsAsync()
+    if !executable('ctags') || g:tag_job_id != 0 && job_status(g:tag_job_id) == 'run'
+        return
+    endif
+    let git_root = system('git rev-parse --show-toplevel 2>/dev/null')
+    let dir = empty(git_root) ? '.' : trim(git_root)
+    let g:tag_job_id = job_start(['ctags', '-R', dir], {'stoponexit': '', 'out_io': 'null', 'err_io': 'null'})
+endfunction
+autocmd BufWritePost * call GenerateTagsAsync()
+set tags=./tags;,tags
+
+ ===== VimWiki =====
 let g:vimwiki_list = [{'path': '~/vimwiki/',
     \ 'syntax': 'markdown', 'ext': 'md'}]
 let g:vimwiki_global_ext = 0
