@@ -54,7 +54,7 @@ function! PluginInstall()
     call GitCloneDepth1('https://github.com/airblade/vim-gitgutter.git', 'vim-gitgutter')
     call GitCloneDepth1('https://github.com/fatih/vim-go.git', 'vim-go')
     call GitCloneDepth1('https://github.com/ludovicchabant/vim-gutentags.git', 'vim-gutentags')
-    call GitCloneDepth1('https://github.com/preservim/vim-indent-guides.git', 'vim-indent-guides')
+
     call GitCloneDepth1('https://github.com/skywind3000/vim-navigator.git', 'vim-navigator')
     call GitCloneDepth1('https://github.com/sheerun/vim-polyglot.git', 'vim-polyglot')
     call GitCloneDepth1('https://github.com/mhinz/vim-startify.git', 'vim-startify')
@@ -127,6 +127,11 @@ set novisualbell
 
 " Path settings
 set path+=$PWD/**
+
+" Indent visualization using native Vim features
+set list
+set listchars=lead:·,space:·,tab:»·,trail:·,extends:>,precedes:<,nbsp:+
+highlight SpecialKey ctermfg=DarkGray guifg=DarkGray
 
 " =============================================================================
 " 3. BACKGROUND AND COLORS
