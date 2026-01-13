@@ -38,7 +38,6 @@ endfunction
 
 " Install all plugins
 function! PluginInstall()
-    call GitCloneDepth1('https://github.com/mileszs/ack.vim.git', 'ack.vim')
     call GitCloneDepth1('https://github.com/neoclide/coc.nvim.git', 'coc.nvim')
 
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
@@ -55,10 +54,12 @@ function! PluginInstall()
     call GitCloneDepth1('https://github.com/skywind3000/vim-navigator.git', 'vim-navigator')
     call GitCloneDepth1('https://github.com/sheerun/vim-polyglot.git', 'vim-polyglot')
     call GitCloneDepth1('https://github.com/mhinz/vim-startify.git', 'vim-startify')
-    call GitCloneDepth1('https://github.com/vimwiki/vimwiki.git', 'vimwiki')
     call GitCloneDepth1('https://github.com/Exafunction/windsurf.vim.git', 'windsurf.vim')
     call GitCloneDepth1('https://github.com/preservim/vimspector.git', 'vimspector')
     call GitCloneDepth1('https://github.com/tpope/vim-fugitive.git', 'vim-fugitive')
+    call GitCloneDepth1('https://github.com/preservim/vimux.git', 'vimux')
+    call GitCloneDepth1('https://github.com/lervag/wiki.vim.git', 'wiki')
+    call GitCloneDepth1('https://github.com/mhinz/vim-grepper', 'vim-grepper')
 endfunction
 
 " Install plugins command
@@ -327,24 +328,7 @@ function! ChangeToGitRoot()
     execute 'cd ' . FindGitRoot()
 endfunction
 
-" Search functions
-let s:rg_command="rg -i --vimgrep --no-hidden --no-ignore -g '!tags' "
 
-function! s:search_term()
-    call inputsave()
-    let search_term = input('Search: ')
-    call inputrestore()
-    if empty(search_term)
-        echo "No search term entered"
-        return ""
-    endif
-    return search_term
-endfunction
-
-function! s:rg_prompt_word()
-    execute 'cexpr system(s:rg_command . s:search_term() . " " . FindGitRoot() . " |sort")'
-    copen
-endfunction
 
 " Buffer management
 function! ListMRUBuffers()
@@ -413,172 +397,20 @@ function! SearchVimCommands(search_pattern)
     copen
 endfunction
 
-" Buffer search functions
-function! RgCurrentWordInBuffer()
-    let word = expand('<cword>')  " Get the word under the cursor.
-    let pattern = shellescape('\<' . word . '\>')  " Add word boundaries and escape the pattern.
 
-    " Build the command to execute
-    let command = 'rg --vimgrep ' . pattern . ' ' . shellescape(expand('%:p'))
 
-    " Execute the rg command and capture the output as a list
-    let results = systemlist(command)
 
-    " Clear the location list and conditionally populate it
-    lclose
-    lexpr []
-    if !empty(results)
-        call setloclist(0, map(copy(results), 'RgResultToLocList(v:val)'))
-        lopen
-    else
-        echo "No occurrences found for the word: " . word
-    endif
-endfunction
 
-function! RgResultToLocList(line)
-    let parts = split(a:line, ':')
-    return {
-        \ "bufnr": bufnr(''),
-        \ "lnum": str2nr(parts[1]),
-        \ "col": str2nr(parts[2]),
-        \ "text": join(parts[3:], ':')
-    \ }
-endfunction
 
-function! RgSearchInBuffer()
-    " Ask the user for a search pattern
-    let pattern = input('Enter search pattern: ')
-    if pattern == ''
-        echo 'Search canceled.'
-        return
-    endif
-    let escapedPattern = shellescape(pattern)
-
-    " Build the rg command like before
-    let command = 'rg --vimgrep ' . escapedPattern . ' ' . shellescape(expand('%:p'))
-
-    " Execute the rg command and capture the output as a list
-    let results = systemlist(command)
-
-    " Clear the location list and conditionally populate it
-    lclose
-    lexpr []
-    if !empty(results)
-        call setloclist(0, map(copy(results), 'RgResultToLocList(v:val)'))
-        lopen
-    else
-        echo "No occurrences found for the pattern: " . pattern
-    endif
-endfunction
-
-" Vimwiki search functions
-function! RgSearchChecklist()
-    let pattern = "' \\\[ \\\]'"
-
-    " Compose the ripgrep command for use with Vim's quickfix, ensuring --vimgrep for proper formatting.
-    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki/'
-
-    " Execute the rg command and get the results
-    let results = systemlist(command)
-
-    " Prepare results for Vim's quickfix list
-    let formatted_results = map(results, 'ProcessRgOutput(v:val)')
-
-    cclose
-    if !empty(formatted_results)
-        call setqflist(formatted_results)
-        copen
-    else
-        echo "No occurrences found for the pattern: ' [ ]'"
-    endif
-endfunction
-
-function! ProcessRgOutput(line)
-    let parts = split(a:line, ':', 1)
-    return {'filename': parts[0], 'lnum': str2nr(parts[1]), 'col': str2nr(parts[2]), 'text': join(parts[3:], ':')}
-endfunction
-
-function! RgSearchWaitingChecklist()
-    let pattern = ":WAIT:"
-
-    " Compose the command to search with rg and exclude any '[X]' patterns
-    " Note: We use 'rg -v "\[X\]"' to filter out lines containing '[X]' after the initial search
-    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki/ | rg -v "\[X\]"'
-
-    " Execute the rg command and get the results
-    let results = systemlist(command)
-
-    " Prepare results for Vim's quickfix list
-    let formatted_results = map(results, 'ProcessRgOutput(v:val)')
-
-    cclose
-    if !empty(formatted_results)
-        call setqflist(formatted_results)
-        copen
-    else
-        echo "No occurrences found for the pattern: ' [ ]' excluding '[X]'"
-    endif
-endfunction
-
-" Tag search function
-function! SearchTag()
-    let tag_pattern = input('Enter tag to search for: ')
-
-    " Exit if no input is given
-    if empty(tag_pattern)
-        echo 'Search canceled.'
-        return
-    endif
-
-    let git_root = system('git rev-parse --show-toplevel')
-    let git_root = substitute(git_root, '\n', '', 'g')
-
-    if v:shell_error || git_root == ''
-        echo 'Not inside a Git repository.'
-        return
-    endif
-
-    let tags_file = git_root . '/tags'
-    let command = 'rg --no-heading --vimgrep ' . shellescape(tag_pattern) . ' ' . shellescape(tags_file)
-
-    let results = systemlist(command)
-    let formatted_results = map(results, 'FormatTagResult(v:val)')
-
-    cclose
-    if !empty(formatted_results)
-        call setqflist(formatted_results)
-        copen
-    else
-        echo "No tag found matching: " . tag_pattern
-    endif
-endfunction
-
-function! FormatTagResult(line)
-    let parts = split(a:line, ':', 1)
-    return {
-        \ 'filename': parts[0],
-        \ 'lnum': str2nr(parts[1]),
-        \ 'col': str2nr(parts[2]),
-        \ 'text': join(parts[3:], ':')
-        \ }
-endfunction
 
 " =============================================================================
 " 7. COMMANDS
 " =============================================================================
 
 " Search commands
-command! RgCurrentWord cexpr system(s:rg_command . shellescape(expand('<cword>')) . ' ' . FindGitRoot() . ' |sort') | copen
-command! -nargs=+ RgForWord cexpr system(s:rg_command . shellescape(join([<f-args>], ' . ')) . ' ' . FindGitRoot() . ' |sort') | copen
-command! RgPromptWord call s:rg_prompt_word()
 command! -nargs=? Fd if empty(<q-args>) | call SearchWithFd(input('Enter search pattern: ')) | else | call SearchWithFd(<q-args>) | endif
 command! ListBuffers call ListMRUBuffers()
 command! -nargs=? SearchCommands call SearchVimCommands(<q-args>)
-command! RgCurrentWordInBuffer call RgCurrentWordInBuffer()
-command! RgSearchBuffer call RgSearchInBuffer()
-command! RgSearchChecklist call RgSearchChecklist()
-command! RgSearchWaitingChecklist call RgSearchWaitingChecklist()
-command! SearchTag call SearchTag()
 
 " Utility commands
 command! ClearQuickfixList cexpr []
@@ -864,25 +696,25 @@ vnoremap <silent><tab><tab> :Navigator g:navigator_visual<cr>
 let g:navigator = {}
 let g:navigator.s = { 'name' : '+search' }
 let g:navigator.s.f = [':Fd', 'search-file']
-let g:navigator.s.w = [":RgCurrentWord ", 'search-current-word']
-let g:navigator.s.W = [":RgPromptWord", 'search-any-Word']
-let g:navigator.s.b = [':ListBuffers','search-buffers']
+let g:navigator.s.w = [':Grepper -cword -noprompt', 'search-current-word']
+let g:navigator.s.W = [':Grepper', 'search-prompt']
+let g:navigator.s.b = [':ListBuffers', 'search-buffers']
 let g:navigator.s.c = [':SearchCommands', 'search-commands']
-let g:navigator.s.t = [":RgSearchChecklist", 'search-tasks-todo']
-let g:navigator.s.T = [":RgSearchWaitingChecklist", 'search-tasks-waiting']
+let g:navigator.s.t = [':SearchChecklist', 'search-tasks-todo']
+let g:navigator.s.T = [':SearchTodo', 'search-tasks-waiting']
 
 let g:navigator.b = { 'name' : '+Buffer' }
-let g:navigator.b.w = [":execute 'RgCurrentWordInBuffer'", 'search-current-word-in-buffer']
-let g:navigator.b.W = ["RgSearchBuffer", "search-word-in-buffer"]
+let g:navigator.b.w = [':Grepper -buffers -cword -noprompt', 'search-word-in-buffer']
+let g:navigator.b.W = [':Grepper -buffers', 'search-prompt-in-buffer']
 
 let g:navigator.c = { 'name' : '+code' }
 let g:navigator.c.d = [':ALEGoToDefinition','go-to-definition']
 let g:navigator.c.h = [':ALEHover','hover']
 let g:navigator.c.r = [':ALEFindReferences','find-references']
-let g:navigator.c.s = [":execute 'ALESymbolSearch ' . expand('<cword>')",'symbol-search']
+let g:navigator.c.s = ['execute "ALESymbolSearch " . expand("<cword>")','symbol-search']
 let g:navigator.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
 let g:navigator.c.t = [":TagbarToggle",'TagBar']
-let g:navigator.c.t = [':SearchTag','search-tags']
+let g:navigator.c.g = [':SearchTag','search-tags']
 
 let g:navigator.d = { 'name' : '+Debug' }
 let g:navigator.d.L = [':call vimspector#Launch()','Vimspector-launch']
@@ -894,6 +726,38 @@ let g:navigator.d.n = [':call vimspector#StepOver()','Vimspector-Step-Over']
 let g:navigator.d.o = [':call vimspector#StepOut()','Vimspector-Step-Out']
 let g:navigator.d.r = [':call vimspector#Reset()','Vimspector-Reset']
 let g:navigator.d.R = [':call vimspector#Restart()','Vimspector-Restart']
+
+let g:navigator.w = { 'name' : '+Wiki' }
+let g:navigator.w.i = [':WikiIndex','Open Wiki Index Page']
+
+let g:navigator.w.j = {'name': '+Journal'}
+let g:navigator.w.j.i = [':WikiJournalIndex', 'Open Journal Index']
+let g:navigator.w.j.n = [':WikiJournal','New Journal Page']
+
+let g:navigator.w.s = {'name': '+Search'}
+let g:navigator.w.s.p = [':WikiPages','Search Wiki for a Page']
+let g:navigator.w.s.t = [':WikiTags','Search Wiki for a Tag']
+let g:navigator.w.s.r = [':WikiGraphRelated', 'Graph Related Map']
+
+let g:navigator.w.l = {'name': '+Links'}
+let g:navigator.w.l.l = [':WikiGraphCheckLinks', 'Check Links']
+let g:navigator.w.l.o = [':WikiGraphCheckOrphans', 'Check Orphan links']
+let g:navigator.w.l.b = [':WikiGraphFindBackLinks', 'Find Backlinks']
+let g:navigator.w.l.t = [':WikiLinkTransform', 'Transform current link']
+
+let g:navigator.w.a = { 'name' : '+Add' }
+let g:navigator.w.a.l = [':WikiLinkAdd', 'Add Link']
+let g:navigator.w.a.t = [':WikiTocGenerate', 'Create TOC']
+
+let g:navigator.w.p = { 'name' : '+Page' }
+let g:navigator.w.p.d = [':WikiPageDelete', 'Delete Page']
+let g:navigator.w.p.r = [':WikiPageRename', 'Rename Page']
+
+let g:navigator.w.t = { 'name' : '+Tag' }
+let g:navigator.w.t.l = [ ':WikiTagList' , 'List Tags' ]
+let g:navigator.w.t.x = [ ':WikiTagReload' , 'Reload Tags' ]
+let g:navigator.w.t.r = [ ':WikiTagRename' , 'Rename Tag' ]
+let g:navigator.w.t.s = [':WikiTags','Search Wiki for a Tag']
 
 let g:navigator_visual = {}
 let g:navigator_visual.c = { 'name' : '+code' }
@@ -907,14 +771,18 @@ nmap <Leader>bm <Plug>(easymotion-in-f2)
 
 
 " ===== Tag Generation (replaces GutenTags) =====
-let g:tag_job_id = 0
+let g:tag_job_running = 0
+function! TagJobExit(job, status)
+    let g:tag_job_running = 0
+endfunction
 function! GenerateTagsAsync()
-    if !executable('ctags') || g:tag_job_id != 0 && job_status(g:tag_job_id) == 'run'
+    if !executable('ctags') || g:tag_job_running
         return
     endif
     let git_root = system('git rev-parse --show-toplevel 2>/dev/null')
     let dir = empty(git_root) ? '.' : trim(git_root)
-    let g:tag_job_id = job_start(['ctags', '-R', dir], {'stoponexit': '', 'out_io': 'null', 'err_io': 'null'})
+    let g:tag_job_running = 1
+    let g:tag_job_id = job_start(['ctags', '-R', dir], {'exit_cb': 'TagJobExit', 'out_io': 'null', 'err_io': 'null'})
 endfunction
 autocmd BufWritePost * call GenerateTagsAsync()
 set tags=./tags;,tags
@@ -924,8 +792,32 @@ let g:vimwiki_list = [{'path': '~/vimwiki/',
     \ 'syntax': 'markdown', 'ext': 'md'}]
 let g:vimwiki_global_ext = 0
 
+" ===== Wiki =======
+let g:wiki_root = '~/vimwiki'
+
 " ===== Vim Magit =====
 let g:magit_git_cmd = 'git'
+
+" ===== Vim-Grepper =====
+let g:grepper               = {}
+let g:grepper.tools         = ['rg', 'ag', 'ack', 'git', 'grep']
+let g:grepper.jump          = 0
+let g:grepper.open          = 1
+let g:grepper.switch        = 1
+let g:grepper.quickfix      = 1
+
+" Grepper operator for visual selection
+nmap gs  <plug>(GrepperOperator)
+xmap gs  <plug>(GrepperOperator)
+
+" Custom search in current buffer
+nnoremap <leader>gb :Grepper -buffers -query 
+
+" Vimwiki custom search commands
+command! -nargs=0 SearchChecklist :Grepper -noprompt -query '\\[ \\]' -dir ~/vimwiki
+command! -nargs=0 SearchTodo :Grepper -noprompt -query ':WAIT:' -dir ~/vimwiki
+command! -nargs=0 SearchTag :Grepper -noprompt -cword -query
+
 
 " ===== Fugitive =====
 function! Grebaseinteractive(args) abort
@@ -1622,6 +1514,59 @@ augroup eunuch
         \   exe 'autocmd eunuch InsertEnter * ++once call s:MapCR()' |
         \ endif
 augroup END
+
+
+function! Send_to_Tmux(text)
+  if !exists("b:tmux_sessionname") || !exists("b:tmux_windowname") || !exists("b:tmux_panenumber")
+    if exists("g:tmux_sessionname") && exists("g:tmux_windowname") && exist("g:tmux_panenumber")
+      let b:tmux_sessionname = g:tmux_sessionname
+      let b:tmux_windowname = g:tmux_windowname
+      let b:tmux_panenumber = g:tmux_panenumber
+    else
+      call <SID>Tmux_Vars()
+    end
+  end
+
+  let target = b:tmux_sessionname . ":" . b:tmux_windowname . "." . b:tmux_panenumber
+
+  call system("tmux set-buffer '" . substitute(a:text, "'", "'\\\\''", 'g') . "'" )
+  call system("tmux paste-buffer -t " . target)
+endfunction
+
+" Session completion
+function! Tmux_Session_Names(A,L,P)
+  return system("tmux list-sessions | sed -e 's/:.*$//'")
+endfunction
+
+" Window completion
+function! Tmux_Window_Names(A,L,P)
+  return system("tmux list-windows -t" . b:tmux_sessionname . ' | grep -e "^\w:" | sed -e "s/ \[[0-9x]*\]$//"')
+endfunction
+
+" Pane completion
+function! Tmux_Pane_Numbers(A,L,P)
+  return system("tmux list-panes -t " . b:tmux_sessionname . ":" . b:tmux_windowname . " | sed -e 's/:.*$//'")
+endfunction
+
+" set tslime.vim variables
+function! s:Tmux_Vars()
+  let b:tmux_sessionname = input("session name: ", "", "custom,Tmux_Session_Names")
+  let b:tmux_windowname = substitute(input("window name: ", "", "custom,Tmux_Window_Names"), ":.*$" , '', 'g')
+  let b:tmux_panenumber = input("pane number: ", "", "custom,Tmux_Pane_Numbers")
+
+  if !exists("g:tmux_sessionname") || !exists("g:tmux_windowname") || !exists("g:tmux_panenumber")
+    let g:tmux_sessionname = b:tmux_sessionname
+    let g:tmux_windowname = b:tmux_windowname
+    let g:tmux_panenumber = b:tmux_panenumber
+  end
+endfunction
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+vmap <C-c><C-c> "ry :call Send_to_Tmux(@r)<CR>
+nmap <C-c><C-c> vip<C-c><C-c>
+
+nmap <C-c>v :call <SID>Tmux_Vars()<CR>
 
 " =============================================================================
 " END OF VIMRC
