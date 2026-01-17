@@ -38,7 +38,11 @@ endfunction
 
 " Install all plugins
 function! PluginInstall()
-    call GitCloneDepth1('https://github.com/neoclide/coc.nvim.git', 'coc.nvim')
+    " NEW PLUGINS - Replace coc.nvim
+    call GitCloneDepth1('https://github.com/dense-analysis/ale.git', 'ale')
+    call GitCloneDepth1('https://github.com/prabirshrestha/asyncomplete.vim.git', 'asyncomplete.vim')
+    call GitCloneDepth1('https://github.com/prabirshrestha/vim-lsp.git', 'vim-lsp')
+    call GitCloneDepth1('https://github.com/prabirshrestha/asyncomplete-lsp.vim.git', 'asyncomplete-lsp.vim')
 
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
     call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
@@ -192,8 +196,8 @@ function! CustomStatusline()
         let l:right .= ' | %{FugitiveHead()}'
     endif
 
-    " coc.nvim integration (show errors/warnings)
-    let l:right .= ' | ' . GetCocStatus()
+    " ALE integration (show errors/warnings)
+    let l:right .= ' | ' . GetALEStatus()
 
     return l:left . '%=' . l:right
 endfunction
@@ -228,15 +232,29 @@ function! ModeIndicator()
     endif
 endfunction
 
-" coc.nvim status function
-function! GetCocStatus()
-    if exists('g:loaded_coc')
-        let l:info = get(b:, 'coc_diagnostic_info', {})
-        if empty(l:info)
-            return get(g:, 'coc_status', '')
+" ALE status function
+function! GetALEStatus()
+    if exists('g:loaded_ale')
+        let l:errors = 0
+        let l:warnings = 0
+
+        " Get ALE loclist for current buffer
+        let l:loclist = getloclist(0)
+        for l:entry in l:loclist
+            if l:entry.bufnr == bufnr('%')
+                let l:type = get(l:entry, 'type', '')
+                if l:type == 'E'
+                    let l:errors += 1
+                elseif l:type == 'W'
+                    let l:warnings += 1
+                endif
+            endif
+        endfor
+
+        if l:errors == 0 && l:warnings == 0
+            return ''
         endif
-        let l:errors = get(l:info, 'error', 0)
-        let l:warnings = get(l:info, 'warning', 0)
+
         let l:result = ''
         if l:errors > 0
             let l:result .= 'E:' . l:errors
@@ -308,6 +326,40 @@ inoremap ' ''<Left>
 
 " Background toggle
 nmap <leader>bg :call ToggleBackground()<CR>
+
+" ===== LSP AND ALE KEY MAPPINGS =====
+" Diagnostic Navigation (ALE)
+nmap <silent> [g <Plug>(ale_previous_wrap)
+nmap <silent> ]g <Plug>(ale_next_wrap)
+
+" LSP Navigation (vim-lsp)
+nmap <silent> gd <Plug>(lsp-definition)
+nmap <silent> gy <Plug>(lsp-type-definition)
+nmap <silent> gi <Plug>(lsp-implementation)
+nmap <silent> gr <Plug>(lsp-references)
+
+" Hover Documentation
+nnoremap <silent> K :call LspHover()<CR>
+
+" Rename
+nmap <leader>rn <Plug>(lsp-rename)
+
+" Code Actions
+nmap <leader>ca :LspCodeAction<CR>
+xmap <leader>ca :LspCodeAction<CR>
+
+" Format
+nmap <leader>f :ALEFix<CR>
+xmap <leader>f :ALEFix<CR>
+
+" Organize Imports
+command! -nargs=0 OR :call LspCodeAction('source.organizeImports')
+
+" Document Symbols
+nmap <silent> gs :LspDocumentSymbol<CR>
+
+" Workspace Symbols
+nmap <silent> gS :LspWorkspaceSymbol<CR>
 
 " =============================================================================
 " 6. SEARCH AND NAVIGATION FUNCTIONS
@@ -421,6 +473,178 @@ command! -nargs=1 RunToQuickfix cexpr system(<q-args>) | copen
 " =============================================================================
 " 8. PLUGIN CONFIGURATIONS
 " =============================================================================
+
+
+" ===== ALE CONFIGURATION =====
+" ALE linters for different filetypes
+let g:ale_linters = {
+    \ 'go': ['gopls', 'govet'],
+    \ 'python': ['pylint', 'mypy'],
+    \ 'javascript': ['eslint'],
+    \ 'typescript': ['eslint', 'tsserver'],
+    \ 'json': ['jsonlint'],
+    \ 'yaml': ['yamllint'],
+    \ 'html': ['htmlhint'],
+    \ 'css': ['stylelint'],
+    \ 'vim': ['vint'],
+    \ 'tex': ['chktex'],
+    \ 'java': ['javac']
+    \ }
+
+" ALE fixers for formatting
+let g:ale_fixers = {
+    \ '*': ['remove_trailing_lines', 'trim_whitespace'],
+    \ 'javascript': ['prettier', 'eslint'],
+    \ 'typescript': ['prettier', 'eslint'],
+    \ 'python': ['black', 'isort'],
+    \ 'go': ['gofmt'],
+    \ 'json': ['prettier'],
+    \ 'yaml': ['prettier'],
+    \ 'html': ['prettier'],
+    \ 'css': ['prettier']
+    \ }
+
+" ALE settings
+let g:ale_linters_explicit = 0
+let g:ale_fix_on_save = 0
+let g:ale_sign_error = 'E'
+let g:ale_sign_warning = 'W'
+let g:ale_sign_info = 'I'
+let g:ale_sign_style_error = 'S'
+let g:ale_sign_style_warning = 'w'
+let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
+let g:ale_virtualtext_cursor = 1
+
+
+" ===== ASYNCOMPLETE CONFIGURATION =====
+" Enable auto-popup on typing
+let g:asyncomplete_auto_popup = 1
+
+" Helper function to check if we should trigger completion
+function! s:check_back_space() abort
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Tab completion mappings
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ asyncomplete#force_refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+" Force completion refresh with Ctrl-Space
+inoremap <silent><expr> <c-space> asyncomplete#force_refresh()
+
+
+" ===== VIM-LSP CONFIGURATION =====
+" Register language servers
+function! s:lsp_settings() abort
+    " Python
+    if executable('pylsp')
+        call lsp#register_server({
+            \ 'name': 'pylsp',
+            \ 'cmd': {server_info->['pylsp']},
+            \ 'whitelist': ['python'],
+            \ })
+    endif
+
+    " Go
+    if executable('gopls')
+        call lsp#register_server({
+            \ 'name': 'gopls',
+            \ 'cmd': {server_info->['gopls']},
+            \ 'whitelist': ['go'],
+            \ })
+    endif
+
+    " TypeScript/JavaScript
+    if executable('typescript-language-server')
+        call lsp#register_server({
+            \ 'name': 'typescript-language-server',
+            \ 'cmd': {server_info->['typescript-language-server', '--stdio']},
+            \ 'whitelist': ['javascript', 'typescript', 'javascriptreact', 'typescriptreact'],
+            \ })
+    endif
+
+    " JSON
+    if executable('vscode-json-language-server')
+        call lsp#register_server({
+            \ 'name': 'vscode-json-language-server',
+            \ 'cmd': {server_info->['vscode-json-language-server', '--stdio']},
+            \ 'whitelist': ['json'],
+            \ })
+    endif
+
+    " YAML
+    if executable('yaml-language-server')
+        call lsp#register_server({
+            \ 'name': 'yaml-language-server',
+            \ 'cmd': {server_info->['yaml-language-server', '--stdio']},
+            \ 'whitelist': ['yaml'],
+            \ })
+    endif
+
+    " HTML
+    if executable('vscode-html-language-server')
+        call lsp#register_server({
+            \ 'name': 'vscode-html-language-server',
+            \ 'cmd': {server_info->['vscode-html-language-server', '--stdio']},
+            \ 'whitelist': ['html'],
+            \ })
+    endif
+
+    " CSS
+    if executable('vscode-css-language-server')
+        call lsp#register_server({
+            \ 'name': 'vscode-css-language-server',
+            \ 'cmd': {server_info->['vscode-css-language-server', '--stdio']},
+            \ 'whitelist': ['css', 'scss'],
+            \ })
+    endif
+
+    " Vim
+    if executable('vim-language-server')
+        call lsp#register_server({
+            \ 'name': 'vim-language-server',
+            \ 'cmd': {server_info->['vim-language-server', '--stdio']},
+            \ 'whitelist': ['vim'],
+            \ })
+    endif
+
+    " TeX
+    if executable('texlab')
+        call lsp#register_server({
+            \ 'name': 'texlab',
+            \ 'cmd': {server_info->['texlab']},
+            \ 'whitelist': ['tex', 'plaintex'],
+            \ })
+    endif
+
+    " Java
+    if executable('jdtls')
+        call lsp#register_server({
+            \ 'name': 'jdtls',
+            \ 'cmd': {server_info->['jdtls']},
+            \ 'whitelist': ['java'],
+            \ })
+    endif
+endfunction
+
+autocmd User lsp_setup call s:lsp_settings()
+
+
+" ===== ASYNCOMPLETE-LSP CONFIGURATION =====
+if exists('g:loaded_asyncomplete')
+    call asyncomplete#register_source({
+        \ 'name': 'lsp',
+        \ 'allowlist': ['*'],
+        \ 'completor': function('asyncomplete#sources#lsp#completor'),
+        \ 'config': {
+        \    'show_context': 1,
+        \ },
+        \ })
+endif
 
 
 " ===== Comment Toggle (replaces Simple Commenter) =====
@@ -708,9 +932,9 @@ let g:navigator.b.w = [':Grepper -buffers -cword -noprompt', 'search-word-in-buf
 let g:navigator.b.W = [':Grepper -buffers', 'search-prompt-in-buffer']
 
 let g:navigator.c = { 'name' : '+code' }
-let g:navigator.c.d = [':ALEGoToDefinition','go-to-definition']
-let g:navigator.c.h = [':ALEHover','hover']
-let g:navigator.c.r = [':ALEFindReferences','find-references']
+let g:navigator.c.d = ['<Plug>(lsp-definition)','go-to-definition']
+let g:navigator.c.h = ['<Plug>(lsp-hover)','hover']
+let g:navigator.c.r = ['<Plug>(lsp-references)','find-references']
 let g:navigator.c.s = ['execute "ALESymbolSearch " . expand("<cword>")','symbol-search']
 let g:navigator.c.c = ['<Plug>(one-line-comment)','Comment-out/toggle']
 let g:navigator.c.t = [":TagbarToggle",'TagBar']
@@ -848,118 +1072,7 @@ endfunction
 command! -nargs=+ -complete=customlist,fugitive#Complete Grebaseinteractive :call g:GitRebaseInteractive('<mods>', '<q-args>')
 command! -nargs=0 Gedittodo :call g:GitEditTodo('<mods>')
 
-" ===== coc.nvim =====
-let g:coc_global_extensions = [
-    \ 'coc-go',
-    \ 'coc-pyright',
-    \ 'coc-tsserver',
-    \ 'coc-json',
-    \ 'coc-yaml',
-    \ 'coc-html',
-    \ 'coc-css',
-    \ 'coc-vimlsp',
-    \ 'coc-texlab',
-    \ 'coc-eslint',
-    \ 'coc-java'
-    \ ]
 
-let g:coc_user_config = {
-    \ 'diagnostic.enable': v:true,
-    \ 'diagnostic.displayByAle': v:false,
-    \ 'diagnostic.enableSign': v:true,
-    \ 'diagnostic.enableMessage': 'always',
-    \ 'diagnostic.messageTarget': 'float',
-    \ 'diagnostic.signOffset': 1,
-    \ 'diagnostic.errorSign': 'E>',
-    \ 'diagnostic.warningSign': 'W>',
-    \ 'diagnostic.infoSign': 'I>',
-    \ 'diagnostic.hintSign': 'H>',
-    \ 'suggest.enablePreselect': v:true,
-    \ 'suggest.noselect': v:false,
-    \ 'suggest.enablePreview': v:true,
-    \ 'suggest.maxCompleteItemCount': 50,
-    \ 'suggest.triggerCompletionWait': 50,
-    \ 'suggest.minTriggerInputLength': 1,
-    \ 'codeLens.enable': v:true,
-    \ 'codeLens.position': 'eol',
-    \ 'colors.enable': v:true,
-    \ 'colors.highlightPriority': 10,
-    \ 'coc.preferences.formatOnSaveFiletypes': [
-    \   'javascript', 'typescript', 'python', 'go', 'json', 'yaml'
-    \ ],
-    \ 'go.goplsOptions': {
-    \   'staticcheck': v:true,
-    \   'usePlaceholders': v:true
-    \ },
-    \ 'python.linting.enabled': v:true,
-    \ 'python.linting.pylintEnabled': v:true,
-    \ 'python.linting.mypyEnabled': v:true,
-    \ 'python.formatting.provider': 'black',
-    \ 'terraform': {
-    \   'languageServer': {
-    \     'enabled': v:true,
-    \     'path': 'terraform-ls',
-    \     'args': ['serve'],
-    \     'maxFileSize': 1048576
-    \   }
-    \ }
-    \ }
-
-" coc.nvim key mappings
-inoremap <silent><expr> <Tab> pumvisible() ? "\<C-n>" : <SID>check_back_space() ? "\<Tab>" : coc#refresh()
-inoremap <expr><S-Tab> pumvisible() ? "\<C-p>" : "\<C-h>"
-
-function! s:check_back_space() abort
-    let col = col('.') - 1
-    return !col || getline('.')[col - 1] =~# '\s'
-endfunction
-
-if has('nvim')
-    inoremap <silent><expr> <c-space> coc#refresh()
-else
-    inoremap <silent><expr> <c-@> coc#refresh()
-endif
-
-inoremap <silent><expr> <cr> pumvisible() ? coc#_select_confirm() : "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
-
-nmap <silent> [g <Plug>(coc-diagnostic-prev)
-nmap <silent> ]g <Plug>(coc-diagnostic-next)
-nmap <silent> gd <Plug>(coc-definition)
-nmap <silent> gy <Plug>(coc-type-definition)
-nmap <silent> gi <Plug>(coc-implementation)
-nmap <silent> gr <Plug>(coc-references)
-
-nnoremap <silent> K :call <SID>show_documentation()<CR>
-
-function! s:show_documentation()
-    if (index(['vim','help'], &filetype) >= 0)
-        execute 'h '.expand('<cword>')
-    elseif (coc#rpc#ready())
-        call CocActionAsync('doHover')
-    else
-        execute '!' . &keywordprg . " " . expand('<cword>')
-    endif
-endfunction
-
-nmap <leader>rn <Plug>(coc-rename)
-xmap <leader>f <Plug>(coc-format-selected)
-nmap <leader>f <Plug>(coc-format-selected)
-xmap <leader>a <Plug>(coc-codeaction-selected)
-nmap <leader>a <Plug>(coc-codeaction-selected)
-nmap <leader>ac <Plug>(coc-codeaction)
-nmap <leader>qf <Plug>(coc-fix-current)
-
-xmap if <Plug>(coc-funcobj-i)
-omap if <Plug>(coc-funcobj-i)
-xmap af <Plug>(coc-funcobj-a)
-omap af <Plug>(coc-funcobj-a)
-
-nmap <silent> <C-s> <Plug>(coc-range-select)
-xmap <silent> <C-s> <Plug>(coc-range-select)
-
-command! -nargs=0 Format :call CocAction('format')
-command! -nargs=? Fold :call CocAction('fold', <f-args>)
-command! -nargs=0 OR :call CocAction('runCommand', 'editor.action.organizeImport')
 
 " =============================================================================
 " 9. AUTOCOMMANDS
@@ -984,7 +1097,9 @@ autocmd VimEnter * call ChangeToGitRoot()
 autocmd OptionSet paste redrawstatus
 autocmd InsertEnter,InsertLeave * redrawstatus
 autocmd ModeChanged * redrawstatus
-autocmd User CocDiagnosticChange redrawstatus
+autocmd User ALELint redrawstatus
+autocmd User lsp_float_open redrawstatus
+
 
 " =============================================================================
 " 10. FILE TYPE DETECTION
