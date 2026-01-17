@@ -488,7 +488,8 @@ let g:ale_linters = {
     \ 'css': ['stylelint'],
     \ 'vim': ['vint'],
     \ 'tex': ['chktex'],
-    \ 'java': ['javac']
+    \ 'java': ['javac'],
+    \ 'terraform': ['tflint'],
     \ }
 
 " ALE fixers for formatting
@@ -612,21 +613,82 @@ function! s:lsp_settings() abort
             \ })
     endif
 
-    " TeX
-    if executable('texlab')
-        call lsp#register_server({
-            \ 'name': 'texlab',
-            \ 'cmd': {server_info->['texlab']},
-            \ 'whitelist': ['tex', 'plaintex'],
-            \ })
-    endif
-
     " Java
     if executable('jdtls')
         call lsp#register_server({
             \ 'name': 'jdtls',
             \ 'cmd': {server_info->['jdtls']},
             \ 'whitelist': ['java'],
+            \ })
+    endif
+
+    " C/C++ LSP server: clangd
+    " Install: Download LLVM/Clang binary from https://llvm.org/releases/download.html (includes clangd). Extract and add bin/ to PATH in ~/.bashrc.
+    if executable('clangd')
+        call lsp#register_server({
+            \ 'name': 'clangd',
+            \ 'cmd': {server_info->['clangd']},
+            \ 'allowlist': ['c', 'cpp', 'objc', 'objcpp'],
+            \ })
+    endif
+
+    " Lua LSP server: lua-language-server
+    " Install: Download from https://github.com/LuaLS/lua-language-server/releases (e.g., lua-language-server-3.x.x-win32-x64.zip). Extract and add to PATH.
+    if executable('lua-language-server')
+        call lsp#register_server({
+            \ 'name': 'lua-language-server',
+            \ 'cmd': {server_info->['lua-language-server']},
+            \ 'allowlist': ['lua'],
+            \ })
+    endif
+
+    " Ruby LSP server: solargraph
+    " Install: Requires Ruby. Download solargraph gem or binary from https://github.com/castwide/solargraph/releases. Install with 'gem install solargraph' (cache gem if offline). Add to PATH.
+    if executable('solargraph')
+        call lsp#register_server({
+            \ 'name': 'solargraph',
+            \ 'cmd': {server_info->['solargraph', 'stdio']},
+            \ 'allowlist': ['ruby'],
+            \ })
+    endif
+
+    " PHP LSP server: intelephense
+    " Install: Download from https://github.com/bmewburn/intelephense/releases (VSIX or binary). Extract and add to PATH.
+    if executable('intelephense')
+        call lsp#register_server({
+            \ 'name': 'intelephense',
+            \ 'cmd': {server_info->['intelephense', '--stdio']},
+            \ 'allowlist': ['php'],
+            \ })
+    endif
+
+    " Bash LSP server: bash-language-server
+    " Install: Requires Node.js. Download npm package tarball offline from https://registry.npmjs.org/bash-language-server, then 'npm install -g bash-language-server' (use cached tarball). Add to PATH.
+    if executable('bash-language-server')
+        call lsp#register_server({
+            \ 'name': 'bash-language-server',
+            \ 'cmd': {server_info->['bash-language-server', 'start']},
+            \ 'allowlist': ['sh', 'bash'],
+            \ })
+    endif
+
+    " Docker LSP server: docker-langserver
+    " Install: Requires Node.js. Download npm package tarball for dockerfile-language-server-nodejs from https://registry.npmjs.org, then 'npm install -g dockerfile-language-server-nodejs'. Add to PATH.
+    if executable('docker-langserver')
+        call lsp#register_server({
+            \ 'name': 'docker-langserver',
+            \ 'cmd': {server_info->['docker-langserver', '--stdio']},
+            \ 'allowlist': ['dockerfile'],
+            \ })
+    endif
+
+    " Terraform LSP server: terraform-ls
+    " Install: Download from https://github.com/hashicorp/terraform-ls/releases
+    if executable('terraform-ls')
+        call lsp#register_server({
+            \ 'name': 'terraform-ls',
+            \ 'cmd': {server_info->['terraform-ls']},
+            \ 'allowlist': ['terraform', 'hcl'],
             \ })
     endif
 endfunction
@@ -1035,7 +1097,7 @@ nmap gs  <plug>(GrepperOperator)
 xmap gs  <plug>(GrepperOperator)
 
 " Custom search in current buffer
-nnoremap <leader>gb :Grepper -buffers -query 
+nnoremap <leader>gb :Grepper -buffers -query
 
 " Vimwiki custom search commands
 command! -nargs=0 SearchChecklist :Grepper -noprompt -query '\\[ \\]' -dir ~/vimwiki
