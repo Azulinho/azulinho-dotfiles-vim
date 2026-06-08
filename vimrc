@@ -24,6 +24,7 @@ function! GitCloneDepth1(repo_url, target_path)
     " Check if the target directory already exists
     if isdirectory('bundle/' . a:target_path)
         if is_git_repo == "true\n"
+            echo "Updating: " . a:repo_url
             call system(update_command)
             echo "Git repository updated successfully"
             return
@@ -32,6 +33,7 @@ function! GitCloneDepth1(repo_url, target_path)
             return
         endif
     else
+        echo "Cloning: " . a:repo_url
         call system(clone_command)
     endif
 endfunction
