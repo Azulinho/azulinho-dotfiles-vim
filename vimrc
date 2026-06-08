@@ -697,8 +697,10 @@ command! -nargs=0 Gedittodo :call g:GitEditTodo('<mods>')
 
 
 " ===== GUTENTAGS CONFIGURATION =====
-" Gutentags automatically manages tag files - minimal config needed
+" Gutentags automatically manages tag files
 let g:gutentags_enabled = 1
+let g:gutentags_cache_dir = '.git/tags'
+set tags=.git/tags;
 
 " ===== AUTO-PAIRS CONFIGURATION =====
 " auto-pairs handles bracket/quote pairing automatically - minimal config needed
