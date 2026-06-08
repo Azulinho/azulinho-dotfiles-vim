@@ -243,7 +243,7 @@ nnoremap <leader>fb :Buffers<CR>
 " Search in current buffer
 nnoremap <leader>fl :Lines<CR>
 " Search all lines across buffers
-nnoremap <leader>fa :Rg<CR>
+nnoremap <leader>fa :call SearchVimgrepPrompt()<CR>
 
 " ===== COMMENTARY KEY MAPPINGS =====
 " Toggle comment on current line
@@ -257,11 +257,21 @@ nmap <leader>cc <Plug>CommentaryLine
 " 6. SEARCH AND NAVIGATION FUNCTIONS
 " =============================================================================
 
+function! SearchVimgrepPrompt()
+    let pattern = input('Search: ')
+    if pattern != ''
+        execute 'vimgrep /' . escape(pattern, '/') . '/gj **/*'
+        copen
+    endif
+endfunction
 
-
-
-
-
+function! SearchVimgrepCurrentWord()
+    let word = expand('<cword>')
+    if word != ''
+        execute 'vimgrep /' . escape(word, '/') . '/gj **/*'
+        copen
+    endif
+endfunction
 
 
 
@@ -523,8 +533,8 @@ let g:navigator = {}
 " fzf for fast single-jump, Grepper for multi-result navigation
 let g:navigator.s = { 'name' : '+search' }
 let g:navigator.s.f = [':Files', 'search-file']                          " fzf (fast)
-let g:navigator.s.w = ['execute ":Rg " . expand("<cword>")', 'search-current-word']      " fzf (fuzzy)
-let g:navigator.s.W = [':Rg', 'search-prompt']                   " fzf (fuzzy)
+let g:navigator.s.w = [':call SearchVimgrepCurrentWord()', 'search-current-word']
+let g:navigator.s.W = [':call SearchVimgrepPrompt()', 'search-prompt']
 let g:navigator.s.b = [':Buffers', 'search-buffers']               " fzf (fast)
 let g:navigator.s.c = [':Commands', 'search-commands']            " fzf (fast)
 let g:navigator.s.t = [':SearchChecklist', 'search-tasks-todo']
@@ -626,7 +636,7 @@ let g:magit_git_cmd = 'git'
 
 " ===== Vim-Grepper =====
 let g:grepper               = {}
-let g:grepper.tools         = ['rg', 'ag', 'ack', 'git', 'grep']
+let g:grepper.tools         = ['grep', 'git']
 let g:grepper.jump          = 0
 let g:grepper.open          = 1
 let g:grepper.switch        = 1
@@ -640,55 +650,28 @@ xmap gs  <plug>(GrepperOperator)
 nnoremap <leader>gb :Grepper -buffers -query
 
 " Vimwiki custom search commands
-command! -nargs=0 SearchChecklist call RgSearchChecklist()
-command! -nargs=0 SearchTodo call RgSearchWaitingChecklist()
+command! -nargs=0 SearchChecklist call VimgrepSearchChecklist()
+command! -nargs=0 SearchTodo call VimgrepSearchWaitingChecklist()
 
 " Vimwiki search functions
-function! RgSearchChecklist()
-    let pattern = "' \\\[ \\\]'"
-
-    " Compose the ripgrep command for use with Vim's quickfix, ensuring --vimgrep for proper formatting.
-    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki/'
-
-    " Execute the rg command and get the results
-    let results = systemlist(command)
-
-    " Prepare results for Vim's quickfix list
-    let formatted_results = map(results, 'ProcessRgOutput(v:val)')
-
+function! VimgrepSearchChecklist()
     cclose
-    if !empty(formatted_results)
-        call setqflist(formatted_results)
+    try
+        execute 'vimgrep / \[ \]/gj ~/vimwiki/**/*'
         copen
-    else
+    catch
         echo "No occurrences found for the pattern: ' [ ]'"
-    endif
+    endtry
 endfunction
 
-function! ProcessRgOutput(line)
-    let parts = split(a:line, ':', 1)
-    return {'filename': parts[0], 'lnum': str2nr(parts[1]), 'col': str2nr(parts[2]), 'text': join(parts[3:], ':')}
-endfunction
-
-function! RgSearchWaitingChecklist()
-    let pattern = ":WAIT:"
-
-    " Compose the ripgrep command for use with Vim's quickfix
-    let command = 'rg --vimgrep ' . pattern . ' ~/vimwiki/'
-
-    " Execute the rg command and get the results
-    let results = systemlist(command)
-
-    " Prepare results for Vim's quickfix list
-    let formatted_results = map(results, 'ProcessRgOutput(v:val)')
-
+function! VimgrepSearchWaitingChecklist()
     cclose
-    if !empty(formatted_results)
-        call setqflist(formatted_results)
+    try
+        execute 'vimgrep /:WAIT:/gj ~/vimwiki/**/*'
         copen
-    else
+    catch
         echo "No occurrences found for the pattern: :WAIT:"
-    endif
+    endtry
 endfunction
 command! -nargs=0 SearchTag :Grepper -noprompt -cword -query
 
