@@ -68,8 +68,7 @@ function! PluginInstall()
     " REPLACEMENT PLUGINS - Replacing custom functions
     call GitCloneDepth1('https://github.com/vim-airline/vim-airline.git', 'vim-airline')
     call GitCloneDepth1('https://github.com/tpope/vim-commentary.git', 'vim-commentary')
-    call GitCloneDepth1('https://github.com/junegunn/fzf.git', 'fzf')
-    call GitCloneDepth1('https://github.com/junegunn/fzf.vim.git', 'fzf.vim')
+    call GitCloneDepth1('https://github.com/vim-fuzzbox/fuzzbox.vim.git', 'fuzzbox.vim')
     call GitCloneDepth1('https://github.com/ludovicchabant/vim-gutentags.git', 'vim-gutentags')
     call GitCloneDepth1('https://github.com/tpope/vim-eunuch.git', 'vim-eunuch')
     call GitCloneDepth1('https://github.com/jiangmiao/auto-pairs.git', 'auto-pairs')
@@ -235,15 +234,15 @@ nmap <silent> gs :LspDocumentSymbol<CR>
 " Workspace Symbols
 nmap <silent> gS :LspWorkspaceSymbol<CR>
 
-" ===== FZF KEY MAPPINGS =====
+" ===== FUZZBOX KEY MAPPINGS =====
 " File search
-nnoremap <leader>ff :Files<CR>
+nnoremap <leader>ff :FuzzyFiles<CR>
 " Buffer search
-nnoremap <leader>fb :Buffers<CR>
+nnoremap <leader>fb :FuzzyBuffers<CR>
 " Search in current buffer
-nnoremap <leader>fl :Lines<CR>
+nnoremap <leader>fl :FuzzyInBuffer<CR>
 " Search all lines across buffers
-nnoremap <leader>fa :call SearchVimgrepPrompt()<CR>
+nnoremap <leader>fa :FuzzyGrep<CR>
 
 " ===== COMMENTARY KEY MAPPINGS =====
 " Toggle comment on current line
@@ -257,20 +256,12 @@ nmap <leader>cc <Plug>CommentaryLine
 " 6. SEARCH AND NAVIGATION FUNCTIONS
 " =============================================================================
 
-function! SearchVimgrepPrompt()
-    let pattern = input('Search: ')
-    if pattern != ''
-        execute 'vimgrep /' . escape(pattern, '/') . '/gj **/*'
-        copen
-    endif
+function! FzgrepCurrentWord()
+    execute 'FuzzyGrep ' . expand('<cword>')
 endfunction
 
-function! SearchVimgrepCurrentWord()
-    let word = expand('<cword>')
-    if word != ''
-        execute 'vimgrep /' . escape(word, '/') . '/gj **/*'
-        copen
-    endif
+function! FzInBufferCurrentWord()
+    execute 'FuzzyInBuffer ' . expand('<cword>')
 endfunction
 
 
@@ -529,21 +520,20 @@ vnoremap <silent><tab><tab> :Navigator g:navigator_visual<cr>
 
 let g:navigator = {}
 
-" +search section - HYBRID APPROACH
-" fzf for fast single-jump, Grepper for multi-result navigation
+" +search section
 let g:navigator.s = { 'name' : '+search' }
-let g:navigator.s.f = [':Files', 'search-file']                          " fzf (fast)
-let g:navigator.s.w = [':call SearchVimgrepCurrentWord()', 'search-current-word']
-let g:navigator.s.W = [':call SearchVimgrepPrompt()', 'search-prompt']
-let g:navigator.s.b = [':Buffers', 'search-buffers']               " fzf (fast)
-let g:navigator.s.c = [':Commands', 'search-commands']            " fzf (fast)
+let g:navigator.s.f = [':FuzzyFiles', 'search-file']
+let g:navigator.s.w = [':call FzgrepCurrentWord()', 'search-current-word']
+let g:navigator.s.W = [':FuzzyGrep', 'search-prompt']
+let g:navigator.s.b = [':FuzzyBuffers', 'search-buffers']
+let g:navigator.s.c = [':FuzzyCommands', 'search-commands']
 let g:navigator.s.t = [':SearchChecklist', 'search-tasks-todo']
 let g:navigator.s.T = [':SearchTodo', 'search-tasks-waiting']
 
-" +Buffer section - HYBRID APPROACH
+" +Buffer section
 let g:navigator.b = { 'name' : '+Buffer' }
-let g:navigator.b.w = ['execute ":BLines " . expand("<cword>")', 'search-word-in-buffer']        " fzf (fuzzy)
-let g:navigator.b.W = [':Lines', 'search-prompt-in-buffer']      " fzf (fuzzy)
+let g:navigator.b.w = [':call FzInBufferCurrentWord()', 'search-word-in-buffer']
+let g:navigator.b.W = [':FuzzyInBuffer', 'search-prompt-in-buffer']
 
 " +code section - UPDATED for new plugins
 let g:navigator.c = { 'name' : '+code' }
@@ -553,7 +543,7 @@ let g:navigator.c.r = ['<Plug>(lsp-references)','find-references']
 let g:navigator.c.s = [':LspReferences','symbol-search']
 let g:navigator.c.c = ['call ToggleComment()', 'Comment-out/toggle']     " FIXED
 let g:navigator.c.t = [":TagbarToggle",'TagBar']
-let g:navigator.c.g = [':Tags', 'search-tags']                   " FIXED
+let g:navigator.c.g = [':FuzzyTags', 'search-tags']
 
 " +Debug section - UNCHANGED (vimspector still works)
 let g:navigator.d = { 'name' : '+Debug' }
@@ -705,20 +695,6 @@ endfunction
 command! -nargs=+ -complete=customlist,fugitive#Complete Grebaseinteractive :call g:GitRebaseInteractive('<mods>', '<q-args>')
 command! -nargs=0 Gedittodo :call g:GitEditTodo('<mods>')
 
-
-" ===== FZF CONFIGURATION =====
-" Use fzf for file searching
-let g:fzf_layout = { 'down': '~40%' }
-
-" Override fzf shell command for Git Bash on Windows
-if has('win32unix')
-  let $FZF_DEFAULT_COMMAND = 'winpty fzf'
-endif
-
-" Performance optimizations for Windows/Git Bash
-let g:fzf_layout = { 'window': '10new' }  " Smaller window, faster redraw
-let g:fzf_preview_window = []  " Disable preview initially (faster first render)
-let $FZF_DEFAULT_OPTS = '--height 40% --border'  " Optimize terminal usage
 
 " ===== GUTENTAGS CONFIGURATION =====
 " Gutentags automatically manages tag files - minimal config needed
