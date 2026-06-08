@@ -41,7 +41,7 @@ endfunction
 " Install all plugins
 function! PluginInstall()
     " NEW PLUGINS - Replace coc.nvim
-    call GitCloneDepth1('https://github.com/dense-analysis/ale.git', 'ale')
+    " ALE kept for linting only (installed manually)
 
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
     call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
@@ -71,6 +71,7 @@ function! PluginInstall()
     call GitCloneDepth1('https://github.com/ludovicchabant/vim-gutentags.git', 'vim-gutentags')
     call GitCloneDepth1('https://github.com/tpope/vim-eunuch.git', 'vim-eunuch')
     call GitCloneDepth1('https://github.com/jiangmiao/auto-pairs.git', 'auto-pairs')
+    call GitCloneDepth1('https://github.com/prabirshrestha/vim-lsp-settings.git', 'vim-lsp-settings')
 endfunction
 
 " Install plugins command
@@ -183,7 +184,7 @@ colorscheme PaperColor
 
 let g:airline_powerline_fonts = 1
 let g:airline#extensions#tabline#enabled = 1
-let g:airline#extensions#ale#enabled = 1
+" vim-lsp status shown via :LspStatus (no airline extension needed)
 
 " =============================================================================
 " 5. KEY MAPPINGS
@@ -199,38 +200,38 @@ nnoremap <leader>w :w!<CR>
 " Background toggle
 nmap <leader>bg :call ToggleBackground()<CR>
 
-" ===== LSP AND ALE KEY MAPPINGS =====
-" Diagnostic Navigation (ALE)
+" ===== LSP KEY MAPPINGS (vim-lsp) =====
+" Diagnostic Navigation (ALE - external linters only)
 nmap <silent> [g <Plug>(ale_previous_wrap)
 nmap <silent> ]g <Plug>(ale_next_wrap)
 
-" LSP Navigation (ALE)
-nmap <silent> gd <Plug>(ale_go_to_definition)
-nmap <silent> gy <Plug>(ale_go_to_type_definition)
-nmap <silent> gi <Plug>(ale_go_to_implementation)
-nmap <silent> gr <Plug>(ale_find_references)
+" LSP Navigation (vim-lsp)
+nmap <silent> gd <Plug>(lsp-definition)
+nmap <silent> gy <Plug>(lsp-type-definition)
+nmap <silent> gi <Plug>(lsp-implementation)
+nmap <silent> gr <Plug>(lsp-references)
 
 " Hover Documentation
-nnoremap <silent> K :ALEHover<CR>
+nnoremap <silent> K :LspHover<CR>
 
 " Rename
-nmap <leader>rn <Plug>(ale_rename)
+nmap <leader>rn <Plug>(lsp-rename)
 
 " Code Actions
-nmap <leader>ca :ALECodeAction<CR>
-xmap <leader>ca :ALECodeAction<CR>
+nmap <leader>ca :LspCodeAction<CR>
+xmap <leader>ca :LspCodeAction<CR>
 
-" Format
-nmap <leader>f :ALEFix<CR>
-xmap <leader>f :ALEFix<CR>
+" Format (via LSP)
+nmap <leader>f :LspDocumentFormat<CR>
+xmap <leader>f :LspDocumentFormat<CR>
 
 " Organize Imports
-command! -nargs=0 OR :ALECodeAction
+command! -nargs=0 OR :LspCodeAction
 
 " Document Symbols - use :TagbarToggle instead
 
 " Workspace Symbols
-nmap <silent> gS :ALESymbolSearch<CR>
+nmap <silent> gS :LspWorkspaceSymbol<CR>
 
 " ===== FUZZBOX KEY MAPPINGS =====
 " File search
@@ -275,39 +276,20 @@ endfunction
 " =============================================================================
 
 
-" ===== ALE CONFIGURATION =====
-" ALE linters for different filetypes
+" ===== ALE CONFIGURATION (linting only) =====
 let g:ale_linters = {
-    \ 'go': ['gopls', 'govet'],
     \ 'python': ['pylint', 'mypy'],
     \ 'javascript': ['eslint'],
-    \ 'typescript': ['eslint', 'tsserver'],
+    \ 'typescript': ['eslint'],
     \ 'json': ['jsonlint'],
     \ 'yaml': ['yamllint'],
     \ 'html': ['htmlhint'],
     \ 'css': ['stylelint'],
     \ 'vim': ['vint'],
     \ 'tex': ['chktex'],
-    \ 'java': ['javac'],
     \ 'terraform': ['tflint'],
     \ }
 
-" ALE fixers for formatting
-let g:ale_fixers = {
-    \ '*': ['remove_trailing_lines', 'trim_whitespace'],
-    \ 'javascript': ['prettier', 'eslint'],
-    \ 'typescript': ['prettier', 'eslint'],
-    \ 'python': ['black', 'isort'],
-    \ 'go': ['gofmt'],
-    \ 'json': ['prettier'],
-    \ 'yaml': ['prettier'],
-    \ 'html': ['prettier'],
-    \ 'css': ['prettier']
-    \ }
-
-" ALE settings
-let g:ale_linters_explicit = 0
-let g:ale_fix_on_save = 0
 let g:ale_sign_error = 'E'
 let g:ale_sign_warning = 'W'
 let g:ale_sign_info = 'I'
@@ -316,8 +298,28 @@ let g:ale_sign_style_warning = 'w'
 let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
 let g:ale_virtualtext_cursor = 1
 
-" Enable ALE completion engine (replaces asyncomplete + vim-lsp)
-let g:ale_completion_enabled = 1
+" ===== vim-lsp CONFIGURATION =====
+let g:lsp_diagnostics_signs_error = {'text': 'E'}
+let g:lsp_diagnostics_signs_warning = {'text': 'W'}
+let g:lsp_diagnostics_signs_information = {'text': 'I'}
+let g:lsp_diagnostics_signs_hint = {'text': 'H'}
+let g:lsp_diagnostics_virtual_text_enabled = 1
+let g:lsp_diagnostics_virtual_text_prefix = '🐛 '
+let g:lsp_diagnostics_virtual_text_align = 'below'
+let g:lsp_diagnostics_echo_cursor = 1
+let g:lsp_diagnostics_echo_delay = 500
+let g:lsp_completion_documentation_enabled = 1
+
+" Auto-install missing LSP servers via vim-lsp-settings
+augroup lsp_auto_install
+  autocmd!
+  autocmd FileType * if exists(':LspInstallServer') | silent! LspInstallServer | endif
+augroup END
+
+" ===== asyncomplete CONFIGURATION =====
+let g:asyncomplete_auto_popup = 1
+let g:asyncomplete_auto_completeopt = 1
+set completeopt-=preview
 " ===== Comment Toggle (vim-commentary) =====
 " vim-commentary provides: gcc (toggle line), gc (toggle selection), gc{motion}
 " ===== Vim Navigator =====
@@ -344,10 +346,10 @@ let g:navigator.b.W = [':FuzzyInBuffer', 'search-prompt-in-buffer']
 
 " +code section - UPDATED for new plugins
 let g:navigator.c = { 'name' : '+code' }
-let g:navigator.c.d = ['<Plug>(ale_go_to_definition)','go-to-definition']
-let g:navigator.c.h = ['<Plug>(ale_hover)','hover']
-let g:navigator.c.r = ['<Plug>(ale_find_references)','find-references']
-let g:navigator.c.s = [':ALEFindReferences','symbol-search']
+let g:navigator.c.d = [':LspDefinition','go-to-definition']
+let g:navigator.c.h = [':LspHover','hover']
+let g:navigator.c.r = [':LspReferences','find-references']
+let g:navigator.c.s = [':LspWorkspaceSymbol','symbol-search']
 let g:navigator.c.c = ['call ToggleComment()', 'Comment-out/toggle']     " FIXED
 let g:navigator.c.t = [":TagbarToggle",'TagBar']
 let g:navigator.c.g = [':FuzzyTags', 'search-tags']
@@ -539,7 +541,7 @@ autocmd BufWritePre * :%s/\s\+$//e
 autocmd OptionSet paste redrawstatus
 autocmd InsertEnter,InsertLeave * redrawstatus
 autocmd ModeChanged * redrawstatus
-autocmd User ALELint redrawstatus
+autocmd User lsp_diagnostics_updated redrawstatus
 
 
 
