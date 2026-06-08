@@ -318,6 +318,10 @@ let g:ale_virtualtext_cursor = 1
 
 " Enable ALE completion engine (replaces asyncomplete + vim-lsp)
 let g:ale_completion_enabled = 1
+
+" Use <CR> to confirm completion selection when popup menu is visible
+inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<CR>"
+inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
 " ===== Comment Toggle (vim-commentary) =====
 " vim-commentary provides: gcc (toggle line), gc (toggle selection), gc{motion}
 " ===== Vim Navigator =====
