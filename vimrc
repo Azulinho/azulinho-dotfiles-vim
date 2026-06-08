@@ -42,9 +42,6 @@ endfunction
 function! PluginInstall()
     " NEW PLUGINS - Replace coc.nvim
     call GitCloneDepth1('https://github.com/dense-analysis/ale.git', 'ale')
-    call GitCloneDepth1('https://github.com/prabirshrestha/asyncomplete.vim.git', 'asyncomplete.vim')
-    call GitCloneDepth1('https://github.com/prabirshrestha/vim-lsp.git', 'vim-lsp')
-    call GitCloneDepth1('https://github.com/prabirshrestha/asyncomplete-lsp.vim.git', 'asyncomplete-lsp.vim')
 
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
     call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
@@ -207,34 +204,33 @@ nmap <leader>bg :call ToggleBackground()<CR>
 nmap <silent> [g <Plug>(ale_previous_wrap)
 nmap <silent> ]g <Plug>(ale_next_wrap)
 
-" LSP Navigation (vim-lsp)
-nmap <silent> gd <Plug>(lsp-definition)
-nmap <silent> gy <Plug>(lsp-type-definition)
-nmap <silent> gi <Plug>(lsp-implementation)
-nmap <silent> gr <Plug>(lsp-references)
+" LSP Navigation (ALE)
+nmap <silent> gd <Plug>(ale_go_to_definition)
+nmap <silent> gy <Plug>(ale_go_to_type_definition)
+nmap <silent> gi <Plug>(ale_go_to_implementation)
+nmap <silent> gr <Plug>(ale_find_references)
 
 " Hover Documentation
-nnoremap <silent> K :call LspHover()<CR>
+nnoremap <silent> K :ALEHover<CR>
 
 " Rename
-nmap <leader>rn <Plug>(lsp-rename)
+nmap <leader>rn <Plug>(ale_rename)
 
 " Code Actions
-nmap <leader>ca :LspCodeAction<CR>
-xmap <leader>ca :LspCodeAction<CR>
+nmap <leader>ca :ALECodeAction<CR>
+xmap <leader>ca :ALECodeAction<CR>
 
 " Format
 nmap <leader>f :ALEFix<CR>
 xmap <leader>f :ALEFix<CR>
 
 " Organize Imports
-command! -nargs=0 OR :call LspCodeAction('source.organizeImports')
+command! -nargs=0 OR :ALECodeAction
 
-" Document Symbols
-nmap <silent> gs :LspDocumentSymbol<CR>
+" Document Symbols - use :TagbarToggle instead
 
 " Workspace Symbols
-nmap <silent> gS :LspWorkspaceSymbol<CR>
+nmap <silent> gS :ALESymbolSearch<CR>
 
 " ===== FUZZBOX KEY MAPPINGS =====
 " File search
@@ -320,199 +316,8 @@ let g:ale_sign_style_warning = 'w'
 let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
 let g:ale_virtualtext_cursor = 1
 
-
-" ===== ASYNCOMPLETE CONFIGURATION =====
-" Enable auto-popup on typing
-let g:asyncomplete_auto_popup = 1
-
-" Helper function to check if we should trigger completion
-function! s:check_back_space() abort
-    let col = col('.') - 1
-    return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
-
-" Tab completion mappings
-inoremap <silent><expr> <TAB>
-      \ pumvisible() ? "\<C-n>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ asyncomplete#force_refresh()
-inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
-
-" Force completion refresh with Ctrl-Space
-inoremap <silent><expr> <c-space> asyncomplete#force_refresh()
-
-
-" ===== VIM-LSP CONFIGURATION =====
-" Register language servers
-function! s:lsp_settings() abort
-    " Python
-    if executable('pylsp')
-        call lsp#register_server({
-            \ 'name': 'pylsp',
-            \ 'cmd': {server_info->['pylsp']},
-            \ 'whitelist': ['python'],
-            \ })
-    endif
-
-    " Go
-    if executable('gopls')
-        call lsp#register_server({
-            \ 'name': 'gopls',
-            \ 'cmd': {server_info->['gopls']},
-            \ 'whitelist': ['go'],
-            \ })
-    endif
-
-    " TypeScript/JavaScript
-    if executable('typescript-language-server')
-        call lsp#register_server({
-            \ 'name': 'typescript-language-server',
-            \ 'cmd': {server_info->['typescript-language-server', '--stdio']},
-            \ 'whitelist': ['javascript', 'typescript', 'javascriptreact', 'typescriptreact'],
-            \ })
-    endif
-
-    " JSON
-    if executable('vscode-json-language-server')
-        call lsp#register_server({
-            \ 'name': 'vscode-json-language-server',
-            \ 'cmd': {server_info->['vscode-json-language-server', '--stdio']},
-            \ 'whitelist': ['json'],
-            \ })
-    endif
-
-    " YAML
-    if executable('yaml-language-server')
-        call lsp#register_server({
-            \ 'name': 'yaml-language-server',
-            \ 'cmd': {server_info->['yaml-language-server', '--stdio']},
-            \ 'whitelist': ['yaml'],
-            \ })
-    endif
-
-    " HTML
-    if executable('vscode-html-language-server')
-        call lsp#register_server({
-            \ 'name': 'vscode-html-language-server',
-            \ 'cmd': {server_info->['vscode-html-language-server', '--stdio']},
-            \ 'whitelist': ['html'],
-            \ })
-    endif
-
-    " CSS
-    if executable('vscode-css-language-server')
-        call lsp#register_server({
-            \ 'name': 'vscode-css-language-server',
-            \ 'cmd': {server_info->['vscode-css-language-server', '--stdio']},
-            \ 'whitelist': ['css', 'scss'],
-            \ })
-    endif
-
-    " Vim
-    if executable('vim-language-server')
-        call lsp#register_server({
-            \ 'name': 'vim-language-server',
-            \ 'cmd': {server_info->['vim-language-server', '--stdio']},
-            \ 'whitelist': ['vim'],
-            \ })
-    endif
-
-    " Java
-    if executable('jdtls')
-        call lsp#register_server({
-            \ 'name': 'jdtls',
-            \ 'cmd': {server_info->['jdtls']},
-            \ 'whitelist': ['java'],
-            \ })
-    endif
-
-    " C/C++ LSP server: clangd
-    " Install: Download LLVM/Clang binary from https://llvm.org/releases/download.html (includes clangd). Extract and add bin/ to PATH in ~/.bashrc.
-    if executable('clangd')
-        call lsp#register_server({
-            \ 'name': 'clangd',
-            \ 'cmd': {server_info->['clangd']},
-            \ 'allowlist': ['c', 'cpp', 'objc', 'objcpp'],
-            \ })
-    endif
-
-    " Lua LSP server: lua-language-server
-    " Install: Download from https://github.com/LuaLS/lua-language-server/releases (e.g., lua-language-server-3.x.x-win32-x64.zip). Extract and add to PATH.
-    if executable('lua-language-server')
-        call lsp#register_server({
-            \ 'name': 'lua-language-server',
-            \ 'cmd': {server_info->['lua-language-server']},
-            \ 'allowlist': ['lua'],
-            \ })
-    endif
-
-    " Ruby LSP server: solargraph
-    " Install: Requires Ruby. Download solargraph gem or binary from https://github.com/castwide/solargraph/releases. Install with 'gem install solargraph' (cache gem if offline). Add to PATH.
-    if executable('solargraph')
-        call lsp#register_server({
-            \ 'name': 'solargraph',
-            \ 'cmd': {server_info->['solargraph', 'stdio']},
-            \ 'allowlist': ['ruby'],
-            \ })
-    endif
-
-    " PHP LSP server: intelephense
-    " Install: Download from https://github.com/bmewburn/intelephense/releases (VSIX or binary). Extract and add to PATH.
-    if executable('intelephense')
-        call lsp#register_server({
-            \ 'name': 'intelephense',
-            \ 'cmd': {server_info->['intelephense', '--stdio']},
-            \ 'allowlist': ['php'],
-            \ })
-    endif
-
-    " Bash LSP server: bash-language-server
-    " Install: Requires Node.js. Download npm package tarball offline from https://registry.npmjs.org/bash-language-server, then 'npm install -g bash-language-server' (use cached tarball). Add to PATH.
-    if executable('bash-language-server')
-        call lsp#register_server({
-            \ 'name': 'bash-language-server',
-            \ 'cmd': {server_info->['bash-language-server', 'start']},
-            \ 'allowlist': ['sh', 'bash'],
-            \ })
-    endif
-
-    " Docker LSP server: docker-langserver
-    " Install: Requires Node.js. Download npm package tarball for dockerfile-language-server-nodejs from https://registry.npmjs.org, then 'npm install -g dockerfile-language-server-nodejs'. Add to PATH.
-    if executable('docker-langserver')
-        call lsp#register_server({
-            \ 'name': 'docker-langserver',
-            \ 'cmd': {server_info->['docker-langserver', '--stdio']},
-            \ 'allowlist': ['dockerfile'],
-            \ })
-    endif
-
-    " Terraform LSP server: terraform-ls
-    " Install: Download from https://github.com/hashicorp/terraform-ls/releases
-    if executable('terraform-ls')
-        call lsp#register_server({
-            \ 'name': 'terraform-ls',
-            \ 'cmd': {server_info->['terraform-ls']},
-            \ 'allowlist': ['terraform', 'hcl'],
-            \ })
-    endif
-endfunction
-
-autocmd User lsp_setup call s:lsp_settings()
-
-
-" ===== ASYNCOMPLETE-LSP CONFIGURATION =====
-if exists('g:loaded_asyncomplete')
-    call asyncomplete#register_source({
-        \ 'name': 'lsp',
-        \ 'allowlist': ['*'],
-        \ 'completor': function('asyncomplete#sources#lsp#completor'),
-        \ 'config': {
-        \    'show_context': 1,
-        \ },
-        \ })
-endif
-
-
+" Enable ALE completion engine (replaces asyncomplete + vim-lsp)
+let g:ale_completion_enabled = 1
 " ===== Comment Toggle (vim-commentary) =====
 " vim-commentary provides: gcc (toggle line), gc (toggle selection), gc{motion}
 " ===== Vim Navigator =====
@@ -539,10 +344,10 @@ let g:navigator.b.W = [':FuzzyInBuffer', 'search-prompt-in-buffer']
 
 " +code section - UPDATED for new plugins
 let g:navigator.c = { 'name' : '+code' }
-let g:navigator.c.d = ['<Plug>(lsp-definition)','go-to-definition']
-let g:navigator.c.h = ['<Plug>(lsp-hover)','hover']
-let g:navigator.c.r = ['<Plug>(lsp-references)','find-references']
-let g:navigator.c.s = [':LspReferences','symbol-search']
+let g:navigator.c.d = ['<Plug>(ale_go_to_definition)','go-to-definition']
+let g:navigator.c.h = ['<Plug>(ale_hover)','hover']
+let g:navigator.c.r = ['<Plug>(ale_find_references)','find-references']
+let g:navigator.c.s = [':ALEFindReferences','symbol-search']
 let g:navigator.c.c = ['call ToggleComment()', 'Comment-out/toggle']     " FIXED
 let g:navigator.c.t = [":TagbarToggle",'TagBar']
 let g:navigator.c.g = [':FuzzyTags', 'search-tags']
@@ -735,7 +540,7 @@ autocmd OptionSet paste redrawstatus
 autocmd InsertEnter,InsertLeave * redrawstatus
 autocmd ModeChanged * redrawstatus
 autocmd User ALELint redrawstatus
-autocmd User lsp_float_open redrawstatus
+
 
 
 " =============================================================================
