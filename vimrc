@@ -318,7 +318,7 @@ let g:ale_virtualtext_cursor = 1
 
 " Enable ALE completion engine (replaces asyncomplete + vim-lsp)
 let g:ale_completion_enabled = 1
-let g:ale_completion_delay = 300
+let g:ale_completion_delay = 400
 
 " Use <CR> to confirm completion selection when popup menu is visible
 inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<CR>"
