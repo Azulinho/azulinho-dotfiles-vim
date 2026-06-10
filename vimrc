@@ -116,6 +116,7 @@ set textwidth=0
 set formatoptions-=t
 set cmdheight=1
 set updatetime=300
+set ttimeoutlen=50
 set hidden
 set splitright
 set nostartofline
@@ -545,11 +546,7 @@ autocmd BufWritePre * :%s/\s\+$//e
 
 " Statusline updates
 autocmd OptionSet paste redrawstatus
-autocmd InsertEnter,InsertLeave * redrawstatus
-autocmd ModeChanged * redrawstatus
 autocmd User ALELint redrawstatus
-
-
 
 " =============================================================================
 " 10. FILE TYPE DETECTION
