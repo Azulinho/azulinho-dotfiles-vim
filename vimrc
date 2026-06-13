@@ -10,6 +10,16 @@
 " 1. PLUGIN MANAGEMENT
 " =============================================================================
 
+" Auto-install pathogen if missing
+if empty(glob($HOME.'/.vim/autoload/pathogen.vim'))
+  call mkdir($HOME.'/.vim/autoload', 'p')
+  silent call system('curl -fLo ' . $HOME . '/.vim/autoload/pathogen.vim --create-dirs https://tpo.pe/pathogen.vim')
+endif
+" Ensure bundle directory exists
+if !isdirectory($HOME.'/.vim/bundle')
+  call mkdir($HOME.'/.vim/bundle', 'p')
+endif
+
 " Pathogen plugin manager setup
 execute pathogen#infect()
 syntax on
@@ -173,6 +183,12 @@ function! ToggleBackground()
 endfunction
 
 " Set background automatically on startup
+" Auto-install plugins on first run if missing
+if !isdirectory($HOME.'/.vim/bundle/papercolor-theme')
+  echo "First launch detected. Installing plugins..."
+  call PluginInstall()
+  execute pathogen#infect()
+endif
 call SetBackgroundBasedOnTime()
 
 " Colorscheme
@@ -514,9 +530,15 @@ command! -nargs=0 Gedittodo :call g:GitEditTodo('<mods>')
 
 " ===== GUTENTAGS CONFIGURATION =====
 " Gutentags automatically manages tag files
-let g:gutentags_enabled = 1
-let g:gutentags_cache_dir = '.git/tags'
-set tags=.git/tags;
+if executable('ctags')
+  let g:gutentags_enabled = 1
+  let g:gutentags_cache_dir = '.git/tags'
+  set tags=.git/tags;
+else
+  let g:gutentags_enabled = 0
+  let g:gutentags_cache_dir = '.git/tags'
+  " ctags not found - gutentags disabled
+endif
 
 " ===== AUTO-PAIRS CONFIGURATION =====
 " auto-pairs handles bracket/quote pairing automatically - minimal config needed
