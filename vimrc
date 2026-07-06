@@ -53,6 +53,8 @@ function! PluginInstall()
     " NEW PLUGINS - Replace coc.nvim
     call GitCloneDepth1('https://github.com/dense-analysis/ale.git', 'ale')
 
+    call GitCloneDepth1('https://github.com/pechorin/any-jump.vim.git', 'any-jump.vim')
+
     call GitCloneDepth1('https://github.com/metakirby5/codi.vim.git', 'codi.vim')
     call GitCloneDepth1('https://github.com/editorconfig/editorconfig-vim.git', 'editorconfig-vim')
     call GitCloneDepth1('https://github.com/preservim/nerdtree.git', 'nerdtree')
@@ -379,6 +381,9 @@ let g:navigator.c.d = ['<Plug>(ale_go_to_definition)','go-to-definition']
 let g:navigator.c.h = ['<Plug>(ale_hover)','hover']
 let g:navigator.c.r = ['<Plug>(ale_find_references)','find-references']
 let g:navigator.c.s = [':ALEFindReferences','symbol-search']
+let g:navigator.c.j = [':AnyJump', 'any-jump']
+let g:navigator.c.J = [':AnyJumpBack', 'any-jump-back']
+let g:navigator.c.l = [':AnyJumpLastResults', 'any-jump-last-results']
 let g:navigator.c.c = ['call ToggleComment()', 'Comment-out/toggle']     " FIXED
 let g:navigator.c.t = [":TagbarToggle",'TagBar']
 let g:navigator.c.g = [':FuzzyTags', 'search-tags']
@@ -431,6 +436,7 @@ let g:navigator.w.t.s = [':WikiTags','Search Wiki for a Tag']
 " Visual mode - UPDATED for new commenting plugin
 let g:navigator_visual = {}
 let g:navigator_visual.c = { 'name' : '+code' }
+let g:navigator_visual.c.j = [':AnyJumpVisual', 'any-jump-visual']
 let g:navigator_visual.c.c = ['call ToggleComment()', 'Comment-out/toggle']   " FIXED
 
 function! ToggleComment()
