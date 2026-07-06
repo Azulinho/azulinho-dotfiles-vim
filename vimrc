@@ -299,7 +299,7 @@ endfunction
 " ALE linters for different filetypes
 let g:ale_linters = {
     \ 'go': ['gopls', 'govet'],
-    \ 'python': ['pylint', 'mypy'],
+    \ 'python': ['ruff', 'pylsp', 'mypy'],
     \ 'javascript': ['eslint'],
     \ 'typescript': ['eslint', 'tsserver'],
     \ 'json': ['jsonlint'],
@@ -317,7 +317,6 @@ let g:ale_fixers = {
     \ '*': ['remove_trailing_lines', 'trim_whitespace'],
     \ 'javascript': ['prettier', 'eslint'],
     \ 'typescript': ['prettier', 'eslint'],
-    \ 'python': ['black', 'isort'],
     \ 'go': ['gofmt'],
     \ 'json': ['prettier'],
     \ 'yaml': ['prettier'],
@@ -325,7 +324,14 @@ let g:ale_fixers = {
     \ 'css': ['prettier']
     \ }
 
+if executable('ruff')
+    let g:ale_fixers.python = ['ruff_format', 'ruff']
+else
+    let g:ale_fixers.python = ['black', 'isort']
+endif
+
 " ALE settings
+let g:ale_python_auto_poetry = 1
 let g:ale_linters_explicit = 0
 let g:ale_fix_on_save = 0
 let g:ale_sign_error = 'E'
